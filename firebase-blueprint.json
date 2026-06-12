@@ -1,0 +1,106 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents school students, teachers, and admins.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "student_number": { "type": "string" },
+        "email": { "type": "string" },
+        "password": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "teacher", "admin"] }
+      },
+      "required": ["id", "name", "email", "role"]
+    },
+    "InterviewReservation": {
+      "title": "InterviewReservation",
+      "description": "Represents an interview requested by students or teachers.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userGradeClass": { "type": "string" },
+        "userContact": { "type": "string" },
+        "targetType": { "type": "string", "enum": ["student", "teacher"] },
+        "targetName": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "topic": { "type": "string" },
+        "content": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "userName", "userContact", "targetType", "date", "time", "topic", "status", "createdAt"]
+    },
+    "Newspaper": {
+      "title": "Newspaper",
+      "description": "Represents the student-edited monthly newspapers in PDF/image format.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "year": { "type": "number" },
+        "month": { "type": "number" },
+        "fileDataUrl": { "type": "string" },
+        "fileName": { "type": "string" },
+        "fileType": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "title", "year", "month", "createdAt"]
+    },
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "Represents direct user feedback or website/newspaper inquiries.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "contact": { "type": "string" },
+        "category": { "type": "string", "enum": ["website", "newspaper"] },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "answered"] },
+        "answer": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "contact", "category", "title", "content", "status", "createdAt"]
+    },
+    "Notice": {
+      "title": "Notice",
+      "description": "Represents school announcements and updates.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "title", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "The profiles of users indexed by user uid."
+    },
+    "/interview_reservations/{reservationId}": {
+      "schema": "InterviewReservation",
+      "description": "All requested student/teacher interview schedules."
+    },
+    "/newspapers/{newspaperId}": {
+      "schema": "Newspaper",
+      "description": "Uploaded student papers, customizable by admins."
+    },
+    "/inquiries/{inquiryId}": {
+      "schema": "Inquiry",
+      "description": "User feedback and issue submissions."
+    },
+    "/notices/{noticeId}": {
+      "schema": "Notice",
+      "description": "School announcement and notification entries."
+    }
+  }
+}

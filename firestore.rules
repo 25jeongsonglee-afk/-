@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Collection: Users
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow create: if isSignedIn() && isOwner(userId) && 
+                    incoming().role in ["student", "teacher", "admin"] &&
+                    incoming().name is string && incoming().name.size() <= 50;
+      allow update: if (isOwner(userId) && 
+                    incoming().role == existing().role && // Prevent self-promoting role changes
+                    incoming().name is string && incoming().name.size() <= 50) || 
+                    isAdmin();
+      allow delete, list: if isAdmin();
+    }
+
+    // Collection: Interview Reservations
+    match /interview_reservations/{reservationId} {
+      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && 
+                    incoming().userId == request.auth.uid &&
+                    incoming().status == "pending" &&
+                    incoming().userName is string && incoming().userName.size() <= 100 &&
+                    incoming().userContact is string && incoming().userContact.size() <= 100;
+      allow update: if isAdmin() || 
+                    (isSignedIn() && existing().userId == request.auth.uid && 
+                     existing().status == "pending" && 
+                     incoming().userId == request.auth.uid &&
+                     incoming().status == "pending" &&
+                     incoming().userName is string && incoming().userName.size() <= 100 &&
+                     incoming().userContact is string && incoming().userContact.size() <= 100);
+      allow delete: if isAdmin();
+    }
+
+    // Collection: Newspapers
+    match /newspapers/{newspaperId} {
+      allow read, list: if true; // Publicly accessible to read
+      allow write: if isAdmin();
+    }
+
+    // Collection: Inquiries
+    match /inquiries/{inquiryId} {
+      allow create: if true; // Inquiries can be submitted by guests/anonymous as well as signed-in users
+      allow read, update, delete: if isAdmin();
+      allow list: if isAdmin();
+    }
+
+    // Collection: Notices
+    match /notices/{noticeId} {
+      allow read, list: if true; // Public announcements
+      allow write: if isAdmin();
+    }
+  }
+}
