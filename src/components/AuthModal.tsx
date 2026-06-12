@@ -11,6 +11,7 @@ import {
 } from '../firebase';
 import { LogIn, LogOut, Check, X, ShieldAlert, Settings, RefreshCw, Mail, User as UserIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import meisterLogo from '../assets/images/meister_logo_1781278274851.jpg';
 
 interface AuthModalProps {
   onAuthChange: (user: User | null) => void;
@@ -215,8 +216,17 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
                   <X className="h-5 w-5" />
                 </button>
 
-                <div className="text-center mb-6">
-                  <span className="text-[10px] text-[#D9A441] font-mono tracking-widest uppercase font-black">DAEGU IL MEISTER</span>
+                <div className="text-center mb-6 flex flex-col items-center">
+                  <div className="h-14 w-14 bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm flex items-center justify-center p-1 mb-3">
+                    <img 
+                      id="img-auth-logo"
+                      src={meisterLogo} 
+                      alt="대구일마이스터고 로고" 
+                      className="h-full w-full object-contain" 
+                      referrerPolicy="no-referrer" 
+                    />
+                  </div>
+                  <span className="text-[10px] text-[#D9A441] font-mono tracking-widest uppercase font-black font-semibold">DAEGU IL MEISTER</span>
                   <h3 className="text-xl font-extrabold text-slate-800 tracking-tight mt-0.5">월간 사람책 로그인</h3>
                   <p className="text-xs text-slate-500 mt-2">
                     구글(Google) 계정을 이용하여 간편하고 안전하게 로그인하세요.

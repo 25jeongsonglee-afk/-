@@ -10,6 +10,7 @@ import NewspaperView from './components/NewspaperView';
 import InterviewRequest from './components/InterviewRequest';
 import InquiryView from './components/InquiryView';
 import AdminPanel from './components/AdminPanel';
+import meisterLogo from './assets/images/meister_logo_1781278274851.jpg';
 
 import { 
   BookOpen, Calendar as CalendarIcon, MessageSquare, Shield, HelpCircle, 
@@ -83,8 +84,14 @@ export default function App() {
               onClick={() => setActiveTab('home')} 
               className="flex items-center gap-3 cursor-pointer group shrink-0"
             >
-              <div className="h-11 w-11 bg-[#1E3A5F] rounded-xl flex items-center justify-center border border-[#D9A441] shadow-md group-hover:scale-105 transition-all">
-                <BookOpen className="h-6 w-6 text-[#D9A441]" />
+              <div className="h-11 w-11 bg-white rounded-xl overflow-hidden flex items-center justify-center border border-slate-200 shadow-sm group-hover:scale-105 transition-all">
+                <img 
+                  id="img-header-logo"
+                  src={meisterLogo} 
+                  alt="대구일마이스터고 로고" 
+                  className="h-full w-full object-cover" 
+                  referrerPolicy="no-referrer" 
+                />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -554,8 +561,16 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6 border-b border-slate-800 pb-8">
             <div className="space-y-2">
-              <div className="flex items-center justify-center sm:justify-start gap-2">
-                <span className="h-2 w-2 rounded-full bg-[#D9A441]" />
+              <div className="flex items-center justify-center sm:justify-start gap-2.5">
+                <div className="h-6 w-6 rounded-md bg-white overflow-hidden flex items-center justify-center border border-slate-700 shadow-sm">
+                  <img 
+                    id="img-footer-logo"
+                    src={meisterLogo} 
+                    alt="대구일마이스터고 로고" 
+                    className="h-full w-full object-cover" 
+                    referrerPolicy="no-referrer" 
+                  />
+                </div>
                 <span className="font-serif font-bold text-lg text-white">월간 사람책</span>
               </div>
               <p className="text-[11px] text-slate-400">대구일마이스터고 학생들과 선생님들의 이야기</p>
