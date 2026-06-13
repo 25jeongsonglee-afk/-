@@ -1,9 +1,10 @@
 {
-  "apiKey": "placeholder-api-key",
-  "authDomain": "placeholder.firebaseapp.com",
-  "projectId": "placeholder-project-id",
-  "storageBucket": "placeholder.appspot.com",
-  "messagingSenderId": "placeholder-sender-id",
-  "appId": "placeholder-app-id",
+  "apiKey": "AIzaSyCEuKHH7GYuWfo-kvjBGqp5gAGofmdOA2Q",
+  "authDomain": "east-2414a.firebaseapp.com",
+  "projectId": "east-2414a",
+  "storageBucket": "east-2414a.firebasestorage.app",
+  "messagingSenderId": "563970216538",
+  "appId": "1:563970216538:web:0b00a32b6cc0e39d0d7e63",
+  "measurementId": "G-8TB180LY84",
   "firestoreDatabaseId": "(default)"
 }
