@@ -278,13 +278,6 @@ export async function googleSignIn(): Promise<User> {
       const fbUser = result.user;
       const email = (fbUser.email || '').trim().toLowerCase();
 
-      // Restrict access only to school email domains & gmail
-      const isSchoolEmail = email.endsWith('@dgmeister.hs.kr') || email.endsWith('@dgego.hs.kr') || email.endsWith('@gmail.com') || email === 'admin@meister.hs.kr';
-      if (!isSchoolEmail) {
-        await signOut(auth);
-        throw new Error('school_domain_restriction_failed');
-      }
-
       // Check if user already exists in Firestore to prevent overwriting custom roles
       try {
         const docSnap = await getDoc(doc(db, 'users', fbUser.uid));
@@ -349,12 +342,6 @@ export async function firebaseEmailSignUp(
   studentNumber?: string
 ): Promise<User> {
   const normalizedEmail = email.trim().toLowerCase();
-  
-  // Restrict access only to school email domains & gmail
-  const isSchoolEmail = normalizedEmail.endsWith('@dgmeister.hs.kr') || normalizedEmail.endsWith('@dgego.hs.kr') || normalizedEmail.endsWith('@gmail.com') || normalizedEmail === 'admin@meister.hs.kr';
-  if (!isSchoolEmail) {
-    throw new Error('school_domain_restriction_failed');
-  }
   
   if (isFirebaseActive()) {
     try {
@@ -424,12 +411,6 @@ export async function firebaseEmailSignUp(
 
 export async function firebaseEmailSignIn(email: string, password: string): Promise<User> {
   const normalizedEmail = email.trim().toLowerCase();
-
-  // Restrict access only to school email domains & gmail
-  const isSchoolEmail = normalizedEmail.endsWith('@dgmeister.hs.kr') || normalizedEmail.endsWith('@dgego.hs.kr') || normalizedEmail.endsWith('@gmail.com') || normalizedEmail === 'admin@meister.hs.kr';
-  if (!isSchoolEmail) {
-    throw new Error('school_domain_restriction_failed');
-  }
 
   if (isFirebaseActive()) {
     try {
@@ -531,20 +512,16 @@ export async function firebaseEmailSignIn(email: string, password: string): Prom
 
 export async function customUserLogin(email: string, role: UserRole, studentNumber?: string, customName?: string): Promise<User> {
   const normalizedEmail = email.trim().toLowerCase();
-  const isSchoolEmail = normalizedEmail.endsWith('@dgmeister.hs.kr') || normalizedEmail.endsWith('@dgego.hs.kr') || normalizedEmail.endsWith('@gmail.com') || normalizedEmail === 'admin@meister.hs.kr';
-  if (!isSchoolEmail) {
-    throw new Error('school_domain_restriction_failed');
-  }
 
-  // Setup standard user metadata - Default role to student
-  let finalRole: UserRole = 'student';
+  // Setup standard user metadata - Use passed role or default to student
+  let finalRole: UserRole = role || 'student';
   let finalName = customName ? customName.trim() : '학생독자';
 
   if (normalizedEmail === '25jeongsonglee@dgmeister.hs.kr' || normalizedEmail === '25jeongsonglee@gmail.com') {
     finalRole = 'admin';
-    finalName = '정송이 (2학년)';
-  } else if (finalName.includes('선생님')) {
-    finalRole = 'teacher';
+    if (!customName) {
+      finalName = '정송이 (2학년)';
+    }
   } else if (normalizedEmail.includes('admin') || normalizedEmail === 'admin@school.kr') {
     finalRole = 'admin';
   }

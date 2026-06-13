@@ -35,6 +35,10 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
   // Password state for representative admin (25jeongsonglee@dgmeister.hs.kr)
   const [adminPasswordInput, setAdminPasswordInput] = useState('');
 
+  // Progressive logging states as requested
+  const [formStep, setFormStep] = useState<1 | 2>(1);
+  const [teacherSecret, setTeacherSecret] = useState('');
+
   useEffect(() => {
     const saved = getCustomFirebaseConfig();
     if (saved) {
@@ -44,19 +48,22 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
 
   const handleCustomLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!emailInput.trim()) {
-      setErrorMsg('구글 로그인 이메일 주소를 정확히 기입하여 주세요.');
+      setErrorMsg('로그인 이메일 주소를 정확히 기입하여 주세요.');
       return;
     }
     
     const emailLower = emailInput.trim().toLowerCase();
-    const isSchoolDomain = emailLower.endsWith('@gmail.com') || emailLower.endsWith('@dgmeister.hs.kr') || emailLower.endsWith('@dgego.hs.kr') || emailLower === 'admin@meister.hs.kr';
-    
-    if (!isSchoolDomain) {
-      setErrorMsg('대구일마이스터고 구글 워크스페이스 또는 구글 계정(@gmail.com, @dgmeister.hs.kr)으로만 로그인이 가능합니다.');
+
+    // Step 1: If submitting at Step 1, switch to entering Name etc.
+    if (formStep === 1) {
+      setFormStep(2);
+      setErrorMsg('');
       return;
     }
 
+    // Step 2 submissions
     const isAdminEmail = emailLower === '25jeongsonglee@dgmeister.hs.kr';
 
     if (isAdminEmail) {
@@ -75,15 +82,22 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
     setErrorMsg('');
     setSuccessMsg('');
     try {
-      // Determine role automatically
+      // Determine role based on secret input
       let finalRole: UserRole = 'student';
       let finalName = nameInput.trim();
 
       if (isAdminEmail) {
         finalRole = 'admin';
         finalName = '정송이 (2학년)';
-      } else if (finalName.includes('선생님')) {
-        finalRole = 'teacher';
+      } else {
+        const secretClean = teacherSecret.trim().toLowerCase();
+        if (secretClean === 'meister') {
+          finalRole = 'teacher';
+          finalName = `${nameInput.trim()}선생님`;
+        } else {
+          finalRole = 'student';
+          finalName = nameInput.trim();
+        }
       }
 
       const user = await customUserLogin(
@@ -93,16 +107,17 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
         finalName
       );
       onAuthChange(user);
-      setSuccessMsg(`구글 계정(${user.email})으로 성공적으로 로그인되었습니다.`);
+      setSuccessMsg(`성공적으로 로그인되었습니다.`);
       setTimeout(() => {
         setIsOpen(false);
         setSuccessMsg('');
-        // Reset password state
         setAdminPasswordInput('');
+        setTeacherSecret('');
+        setFormStep(1);
       }, 1200);
     } catch (err: any) {
       console.error(err);
-      setErrorMsg('로그인 처리 중 오류 발생: 구글 메일 연동에 실패했습니다.');
+      setErrorMsg('로그인 처리 중 오류 발생: 로그인 연동에 실패했습니다.');
     } finally {
       setLoading(false);
     }
@@ -132,11 +147,7 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
     } catch (err: any) {
       clearTimeout(timeoutId);
       console.error(err);
-      if (err.message === 'school_domain_restriction_failed') {
-        setErrorMsg('구글 및 대구일마이스터고 구성원 계정만 로그인할 수 있도록 제한되어 있습니다. (@gmail.com, @dgmeister.hs.kr, @dgego.hs.kr)');
-      } else {
-        setErrorMsg('구글 로그인 시도 실패. 팝업이 차단되었는지 확인해주시거나, 구글 Firebase 콘솔의 Authentication 메뉴에서 Google Provider(제공업체)가 활성화되어 있는지 확인해 주세요.');
-      }
+      setErrorMsg('구글 로그인 시도 실패. 팝업이 차단되었는지 확인해주시거나, 구글 Firebase 콘솔의 Authentication 메뉴에서 Google Provider(제공업체)가 활성화되어 있는지 확인해 주세요.');
     } finally {
       setLoading(false);
     }
@@ -197,6 +208,11 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
             setIsOpen(true);
             setErrorMsg('');
             setSuccessMsg('');
+            setFormStep(1);
+            setTeacherSecret('');
+            setNameInput('');
+            setEmailInput('');
+            setAdminPasswordInput('');
           }}
           id="btn-login-open"
           className="flex items-center gap-2 bg-[#1E3A5F] text-white hover:bg-[#162c4a] text-xs font-semibold px-5 py-2.5 rounded-xl shadow-md border border-[#D9A441]/30 transition-all cursor-pointer"
@@ -239,10 +255,10 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
                   <span className="text-[10px] text-[#D9A441] font-mono tracking-widest uppercase font-black font-semibold">DAEGU IL MEISTER</span>
                   <h3 className="text-xl font-extrabold text-slate-800 tracking-tight mt-0.5">월간 사람책 로그인</h3>
                   <p className="text-xs text-slate-500 mt-2">
-                    구글(Google) 계정을 이용하여 간편하고 안전하게 로그인하세요.
+                    구글(Google) 계정 혹은 본인의 이메일을 이용하여 간편하게 로그인하세요.
                   </p>
-                  <div className="mt-3 text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg py-1.5 px-3 inline-block font-semibold">
-                    🔒 학교 공인 구글 계정 및 Gmail 전용
+                  <div className="mt-3 text-[10.5px] text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg py-1.5 px-3 inline-block font-semibold">
+                    🗝️ 이메일 간편 연동 및 역할 맞춤형 로그인
                   </div>
                 </div>
 
@@ -294,95 +310,124 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
                   ) : (
                     <form onSubmit={handleCustomLogin} className="space-y-4 text-left">
                       <div className="bg-[#1E3A5F]/5 border border-[#1E3A5F]/10 p-3 rounded-xl text-[11px] text-[#1E3A5F] leading-relaxed font-semibold">
-                        ℹ️ {isFBActive ? '구글 팝업 인증 오류 시 사용하는 임시 로그인 양식입니다. 본인의 구글 이메일 주소와 실명을 입력해주세요.' : '현재 체험용 빌드 환경입니다. 본인의 구글 계정 이메일과 정보를 입력하시면 안전하게 본인 계정 정보로 로그인됩니다!'}
+                        ℹ️ {isFBActive ? '구글 팝업 인증 오류 시 사용하는 임시 로그인 양식입니다. 본인의 이메일 주소와 실명을 입력해주세요.' : '현재 체험용 빌드 환경입니다. 본인의 이메일을 입력하시고 다음 단계로 이동해주세요.'}
                       </div>
 
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 mb-1 flex items-center gap-1">
-                          <Mail className="h-3.5 w-3.5 text-slate-400" />
-                          구글 계정 이메일 주소
-                        </label>
-                        <input
-                          type="email"
-                          required
-                          value={emailInput}
-                          onChange={(e) => {
-                            setEmailInput(e.target.value);
-                            const val = e.target.value.trim().toLowerCase();
-                            if (val !== '25jeongsonglee@dgmeister.hs.kr') {
-                              setAdminPasswordInput('');
-                            }
-                          }}
-                          placeholder="example@gmail.com 또는 @dgmeister.hs.kr"
-                          className="w-full text-xs py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20 focus:border-[#1E3A5F] transition-all"
-                        />
-                      </div>
+                      {formStep === 1 ? (
+                        /* Step 1: Email Input Only */
+                        <div className="space-y-4 animate-fade-in">
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-600 mb-1 flex items-center gap-1">
+                              <Mail className="h-3.5 w-3.5 text-slate-400" />
+                              로그인 이메일 주소
+                            </label>
+                            <input
+                              type="email"
+                              required
+                              value={emailInput}
+                              onChange={(e) => {
+                                setEmailInput(e.target.value);
+                                const val = e.target.value.trim().toLowerCase();
+                                if (val !== '25jeongsonglee@dgmeister.hs.kr') {
+                                  setAdminPasswordInput('');
+                                }
+                              }}
+                              placeholder="본인의 이메일 주소를 입력해 주세요"
+                              className="w-full text-xs py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20 focus:border-[#1E3A5F] transition-all"
+                            />
+                          </div>
 
-                      {emailInput.trim().toLowerCase() === '25jeongsonglee@dgmeister.hs.kr' ? (
-                        /* Admin Password Area */
-                        <div className="space-y-3 p-4 bg-emerald-50/40 border border-emerald-100 rounded-xl animate-fade-in text-left">
-                          <label className="block text-[11px] font-bold text-emerald-900 mb-1 flex items-center gap-1.5">
-                            🔒 대표관리자 비밀번호 입력
-                          </label>
-                          <input
-                            type="password"
-                            required
-                            value={adminPasswordInput}
-                            onChange={(e) => setAdminPasswordInput(e.target.value)}
-                            placeholder="관리자 비밀번호 입력"
-                            className="w-full text-xs py-2.5 px-3 bg-white border border-emerald-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all font-mono tracking-wide"
-                          />
-                          <p className="text-[10px] text-emerald-800 leading-relaxed">
-                            💡 대표관리자 계정은 전용 관리자 비밀번호를 정확히 입력하셔야 안전하게 로그인이 활성화됩니다.
-                          </p>
+                          <button
+                            type="submit"
+                            className="w-full py-3.5 px-4 bg-[#1E3A5F] hover:bg-[#152e4f] text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer border border-[#1E3A5F]/30"
+                          >
+                            <span>다음 단계로 이동 (성함 입력) →</span>
+                          </button>
                         </div>
                       ) : (
-                        /* Standard Name Input - Roles automatically configured */
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-600 mb-1 flex items-center gap-1">
-                            <UserIcon className="h-3.5 w-3.5 text-slate-400" />
-                            본인 성함 (실명)
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={nameInput}
-                            onChange={(e) => {
-                              setNameInput(e.target.value);
-                              const nameVal = e.target.value;
-                              if (nameVal.includes('선생님')) {
-                                setRoleInput('teacher');
-                              } else {
-                                setRoleInput('student');
-                              }
+                        /* Step 2: Name Input & Optional Secret Password Input */
+                        <div className="space-y-4 animate-fade-in">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormStep(1);
+                              setErrorMsg('');
                             }}
-                            placeholder="본인의 실제 성명을 적어주세요"
-                            className="w-full text-xs py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20 focus:border-[#1E3A5F] transition-all"
-                          />
-                          <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed">
-                            💡 교내 역할은 기본적으로 <strong>일반학생</strong>으로 로그인됩니다.
-                            <br />
-                            💡 이름에 <strong>&apos;선생님&apos;</strong>이 포함되면 자동으로 <strong>교직원(지도교사)</strong> 권한이 무상 부여됩니다!
-                          </p>
+                            className="text-[10px] text-slate-500 hover:text-slate-800 font-bold flex items-center gap-1 mb-2 underline cursor-pointer"
+                          >
+                            ← 이메일 재설정 ({emailInput})
+                          </button>
+
+                          {emailInput.trim().toLowerCase() === '25jeongsonglee@dgmeister.hs.kr' ? (
+                            /* Admin Password Area */
+                            <div className="space-y-3 p-4 bg-emerald-50/40 border border-emerald-100 rounded-xl text-left">
+                              <label className="block text-[11px] font-bold text-emerald-900 mb-1 flex items-center gap-1.5">
+                                🔒 대표관리자 비밀번호 입력
+                              </label>
+                              <input
+                                type="password"
+                                required
+                                value={adminPasswordInput}
+                                onChange={(e) => setAdminPasswordInput(e.target.value)}
+                                placeholder="관리자 비밀번호 입력"
+                                className="w-full text-xs py-2.5 px-3 bg-white border border-emerald-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all font-mono tracking-wide"
+                              />
+                              <p className="text-[10px] text-emerald-800 leading-relaxed font-sans">
+                                💡 대표관리자 계정은 전용 관리자 비밀번호를 정확히 입력하셔야 안전하게 로그인이 활성화됩니다.
+                              </p>
+                            </div>
+                          ) : (
+                            /* Custom User Name & Teacher Secret Input */
+                            <div className="space-y-4">
+                              <div>
+                                <label className="block text-[11px] font-bold text-slate-600 mb-1 flex items-center gap-1">
+                                  <UserIcon className="h-3.5 w-3.5 text-slate-400" />
+                                  본인 성함 (실명)
+                                </label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={nameInput}
+                                  onChange={(e) => setNameInput(e.target.value)}
+                                  placeholder="본인의 실제 성명을 적어주세요"
+                                  className="w-full text-xs py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20 focus:border-[#1E3A5F] transition-all"
+                                />
+                              </div>
+
+                              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-left space-y-2">
+                                <label className="block text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                                  🗝️ 선택비밀번호 (교직원 전용)
+                                </label>
+                                <input
+                                  type="password"
+                                  value={teacherSecret}
+                                  onChange={(e) => setTeacherSecret(e.target.value)}
+                                  placeholder="선생님이신 경우 여기에 비밀번호를 기입하세요"
+                                  className="w-full text-xs py-2 px-3 bg-white border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/15 focus:border-[#1E3A5F] transition-all font-mono"
+                                />
+                                <p className="text-[10px] text-slate-500 leading-relaxed font-semibold">
+                                  💡 비밀번호를 적지 않거나 건너뛰면 <strong className="text-[#1E3A5F]">일반 학생 권한</strong>으로 로그인됩니다.
+                                  <br />
+                                  💡 <strong>&apos;meister&apos;</strong>를 입력하시는 경우 <strong className="text-orange-600 font-bold">교직원 권한</strong> 및 <strong className="text-orange-600 font-bold">&apos;***선생님&apos;</strong>으로 호칭이 설정됩니다.
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="flex flex-col gap-2 pt-2">
+                            <button
+                              type="submit"
+                              disabled={loading}
+                              className="w-full py-3.5 px-4 bg-[#1E3A5F] hover:bg-[#152e4f] text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2.5 shadow-md cursor-pointer disabled:opacity-50 border border-[#1E3A5F]/30"
+                            >
+                              <span>{loading ? '인증 연동하는 중...' : '입력 완료 및 이메일 로그인'}</span>
+                            </button>
+                          </div>
                         </div>
                       )}
 
-                      <div className="flex flex-col gap-2 pt-2">
-                        <button
-                          type="submit"
-                          disabled={loading}
-                          className="w-full py-3.5 px-4 bg-[#1E3A5F] hover:bg-[#152e4f] text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2.5 shadow-md cursor-pointer disabled:opacity-50 border border-[#1E3A5F]/30"
-                        >
-                          <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" width="100%" height="100%">
-                            <path fill="#ffffff" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.47 15.01 0 12 0 7.35 0 3.32 2.67 1.33 6.56l3.86 3C6.12 7.02 8.85 5.04 12 5.04z" />
-                            <path fill="#ffffff" d="M23.49 12.27c0-.81-.07-1.59-.2-2.35H12v4.51h6.48c-.28 1.47-1.11 2.71-2.35 3.55l3.64 2.83c2.13-1.97 3.72-4.87 3.72-8.54z" />
-                            <path fill="#ffffff" d="M5.19 14.56c-.24-.72-.38-1.5-.38-2.31s.14-1.59.38-2.31L1.33 6.94C.48 8.62 0 10.5 0 12.5s.48 3.88 1.33 5.56l3.86-3z" />
-                            <path fill="#ffffff" d="M12 18.96c-3.15 0-5.88-1.98-6.81-4.92l-3.86 3C3.32 21.13 7.35 24 12 24c3.24 0 5.95-1.08 7.93-2.91l-3.64-2.83c-1.11.75-2.52 1.3-4.29 1.3z" />
-                          </svg>
-                          <span>{loading ? '인증 연동하는 중...' : '입력한 정보로 체험 로그인'}</span>
-                        </button>
-
-                        {isFBActive && (
+                      {isFBActive && (
+                        <div className="flex flex-col gap-2 pt-2">
                           <button
                             type="button"
                             onClick={() => {
@@ -393,8 +438,8 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
                           >
                             ← 진짜 Google 로그인 화면으로 돌아가기
                           </button>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </form>
                   )}
 
