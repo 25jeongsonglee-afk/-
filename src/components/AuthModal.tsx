@@ -38,6 +38,7 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
   // Progressive logging states as requested
   const [formStep, setFormStep] = useState<1 | 2>(1);
   const [teacherSecret, setTeacherSecret] = useState('');
+  const [googleTeacherSecret, setGoogleTeacherSecret] = useState('');
 
   useEffect(() => {
     const saved = getCustomFirebaseConfig();
@@ -135,7 +136,7 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
     }, 15000);
 
     try {
-      const user = await googleSignIn();
+      const user = await googleSignIn(googleTeacherSecret);
       clearTimeout(timeoutId);
       onAuthChange(user);
       setSuccessMsg('구글 계정으로 성공적으로 로그인되었습니다.');
@@ -143,6 +144,7 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
       setTimeout(() => {
         setIsOpen(false);
         setSuccessMsg('');
+        setGoogleTeacherSecret('');
       }, 1000);
     } catch (err: any) {
       clearTimeout(timeoutId);
@@ -210,6 +212,7 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
             setSuccessMsg('');
             setFormStep(1);
             setTeacherSecret('');
+            setGoogleTeacherSecret('');
             setNameInput('');
             setEmailInput('');
             setAdminPasswordInput('');
@@ -279,6 +282,24 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
                 <div className="space-y-4 py-2">
                   {isFBActive && !useLocalFallback ? (
                     <div className="space-y-3.5">
+                      <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-left space-y-2">
+                        <label className="block text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                          🗝️ 선택비밀번호 (교직원 구글 로그인 전용)
+                        </label>
+                        <input
+                          type="password"
+                          value={googleTeacherSecret}
+                          onChange={(e) => setGoogleTeacherSecret(e.target.value)}
+                          placeholder="구글 로그인 예정인 선생님이신 경우 기입하세요"
+                          className="w-full text-xs py-2 px-3 bg-white border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/15 focus:border-[#1E3A5F] transition-all font-mono"
+                        />
+                        <p className="text-[10px] text-slate-500 leading-relaxed font-semibold">
+                          💡 비밀번호를 적지 않거나 건너뛰면 기본 <strong>학생 / 독자 권한</strong>으로 로그인됩니다.
+                          <br />
+                          💡 <strong>&apos;meister&apos;</strong>를 적으시면 <strong className="text-orange-600 font-bold">교직원 권한</strong> 및 <strong className="text-orange-600 font-bold">&apos;***선생님&apos;</strong> 호칭으로 자동 변환됩니다.
+                        </p>
+                      </div>
+
                       <button
                         onClick={handleGoogleLogin}
                         disabled={loading}

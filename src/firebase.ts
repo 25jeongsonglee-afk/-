@@ -270,7 +270,10 @@ export function setSimulatedUser(user: SimulatedUser | null) {
 }
 
 // 1. AUTHENTICATION SERVICES
-export async function googleSignIn(): Promise<User> {
+export async function googleSignIn(teacherSecret?: string): Promise<User> {
+  const secretClean = (teacherSecret || '').trim().toLowerCase();
+  const isTeacherBySecret = secretClean === 'meister';
+
   if (isFirebaseActive()) {
     try {
       const provider = new GoogleAuthProvider();
@@ -279,12 +282,11 @@ export async function googleSignIn(): Promise<User> {
       const email = (fbUser.email || '').trim().toLowerCase();
 
       // Check if user already exists in Firestore to prevent overwriting custom roles
+      let existingProfile: User | null = null;
       try {
         const docSnap = await getDoc(doc(db, 'users', fbUser.uid));
         if (docSnap.exists()) {
-          const profile = docSnap.data() as User;
-          setSimulatedUser(profile as SimulatedUser);
-          return profile;
+          existingProfile = docSnap.data() as User;
         }
       } catch (e) {
         console.warn('Could not fetch user profile from Firestore:', e);
@@ -295,13 +297,20 @@ export async function googleSignIn(): Promise<User> {
       
       if (email === '25jeongsonglee@dgmeister.hs.kr' || email === '25jeongsonglee@gmail.com') {
         role = 'admin';
-        if (!fbUser.displayName) {
-          name = '정송이 (2학년)';
-        }
+        name = '정송이 (2학년)';
       } else if (email.includes('admin') || email === 'admin@school.kr') {
         role = 'admin';
+      } else if (isTeacherBySecret) {
+        role = 'teacher';
+        const baseName = fbUser.displayName ? fbUser.displayName.replace(/\s*선생님\s*$/, '').trim() : '교사';
+        name = `${baseName}선생님`;
+      } else if (existingProfile) {
+        role = existingProfile.role;
+        name = existingProfile.name;
       } else if (email.includes('teacher') || email === 'teacher@dgmeister.hs.kr' || email === 'teacher@gmail.com') {
         role = 'teacher';
+        const baseName = name.replace(/\s*선생님\s*$/, '').trim();
+        name = `${baseName}선생님`;
       }
 
       const userProfile: User = {
@@ -323,11 +332,19 @@ export async function googleSignIn(): Promise<User> {
     }
   } else {
     // If firebase is not active, fallback
+    let role: UserRole = 'student';
+    let name = '정송이';
+    if (isTeacherBySecret) {
+      role = 'teacher';
+      name = '김선생님';
+    } else {
+      role = 'admin';
+    }
     const defaultUser: SimulatedUser = {
       id: 'mock-student-id',
       email: '25jeongsonglee@dgmeister.hs.kr',
-      name: '정송이',
-      role: 'admin'
+      name: name,
+      role: role
     };
     setSimulatedUser(defaultUser);
     return defaultUser as User;
