@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Newspaper, User, NewspaperComment } from '../types';
 import { addNewspaper, deleteNewspaper, getNewspaperComments, addNewspaperComment, deleteNewspaperComment } from '../firebase';
-import { BookOpen, Search, Download, Trash, RefreshCw, Plus, FileText, Image as ImageIcon, Check, Calendar, AlertCircle, MessageSquare, Trash2, X, Shield, Users } from 'lucide-react';
+import { BookOpen, Search, Download, Trash, RefreshCw, Plus, FileText, Image as ImageIcon, Check, Calendar, AlertCircle, MessageSquare, Trash2, X, Shield, Users, Maximize2, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface NewspaperViewProps {
   newspapers: Newspaper[];
   onRefresh: () => void;
   currentUser: User | null;
+  initialSelectedId?: string | null;
+  onClearInitialId?: () => void;
 }
 
-export default function NewspaperView({ newspapers, onRefresh, currentUser }: NewspaperViewProps) {
+export default function NewspaperView({ newspapers, onRefresh, currentUser, initialSelectedId, onClearInitialId }: NewspaperViewProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState<number | 'all'>('all');
   const [isAdding, setIsAdding] = useState(false);
@@ -40,6 +42,47 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser }: Ne
   const [commentError, setCommentError] = useState('');
   const [commentSuccess, setCommentSuccess] = useState(false);
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+
+  // States for viewing newspaper large
+  const [zoomedPaper, setZoomedPaper] = useState<Newspaper | null>(null);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [rotation, setRotation] = useState(0);
+  const [showZoomSidebar, setShowZoomSidebar] = useState(true);
+
+   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setZoomedPaper(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (initialSelectedId) {
+      const found = newspapers.find((n) => n.id === initialSelectedId);
+      if (found) {
+        setSelectedNewspaper(found);
+        loadComments(found.id);
+        // Automatically open in zoomed view as well
+        setZoomedPaper(found);
+        setZoomScale(1);
+        setRotation(0);
+      }
+      if (onClearInitialId) {
+        onClearInitialId();
+      }
+    }
+  }, [initialSelectedId, newspapers]);
+
+  const handleZoomOpen = (paper: Newspaper) => {
+    setZoomedPaper(paper);
+    setSelectedNewspaper(paper); // Sync selectedNewspaper to that paper!
+    setZoomScale(1);
+    setRotation(0);
+    loadComments(paper.id);
+  };
 
   const loadComments = async (paperId: string) => {
     setCommentsLoading(true);
@@ -447,7 +490,8 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser }: Ne
                     src={paper.fileDataUrl}
                     alt={paper.title}
                     referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-zoom-in"
+                    onClick={() => handleZoomOpen(paper)}
                   />
                 ) : (
                   <div className="flex flex-col items-center text-slate-400">
@@ -457,18 +501,31 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser }: Ne
                 )}
                 
                 {/* Format Tag */}
-                <span className="absolute top-3 left-3 bg-[#1E3A5F] text-white text-[9px] font-bold px-2 py-1 rounded-md uppercase tracking-wider shadow-sm">
+                <span className="absolute top-3 left-3 bg-[#1E3A5F] text-white text-[9px] font-bold px-2 py-1 rounded-md uppercase tracking-wider shadow-sm z-10">
                   {paper.fileType === 'pdf' ? '📖 PDF ARCHIVE' : '🖼️ IMAGE BOARD'}
                 </span>
 
                 {/* Quick Details Floating Banner */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all flex items-end p-4">
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-3 gap-1.5 duration-300">
                   <button
-                    onClick={() => startDownload(paper)}
-                    className="w-full py-2 bg-white hover:bg-slate-100 text-[#1E3A5F] hover:text-[#1E3A5F] flex items-center justify-center gap-2 text-xs font-bold rounded-xl shadow cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleZoomOpen(paper);
+                    }}
+                    className="w-full py-2 bg-[#D9A441] hover:bg-[#c29235] text-white flex items-center justify-center gap-1.5 text-xs font-bold rounded-xl shadow cursor-pointer transition-all"
                   >
-                    <Download className="h-4 w-4" />
-                    <span>바로 아카이브 다운</span>
+                    <Maximize2 className="h-3.5 w-3.5" />
+                    <span>지면 크게 보기</span>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startDownload(paper);
+                    }}
+                    className="w-full py-2 bg-white hover:bg-slate-100 text-[#1E3A5F] flex items-center justify-center gap-1.5 text-[11px] font-bold rounded-xl shadow cursor-pointer transition-colors"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span>아카이브 다운</span>
                   </button>
                 </div>
               </div>
@@ -569,14 +626,21 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser }: Ne
                 <div className="lg:col-span-4 flex flex-col gap-4">
                   <div className="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 shadow-inner">
                     {selectedNewspaper.fileDataUrl ? (
-                      <div className="aspect-[4/5] rounded-xl overflow-hidden relative border border-slate-200 shadow-sm max-h-[220px] lg:max-h-[300px]">
+                      <div 
+                        onClick={() => handleZoomOpen(selectedNewspaper)}
+                        className="aspect-[4/5] rounded-xl overflow-hidden relative border border-slate-200 shadow-sm max-h-[220px] lg:max-h-[300px] cursor-zoom-in group/thumb"
+                      >
                         <img
                           src={selectedNewspaper.fileDataUrl}
                           alt={selectedNewspaper.title}
                           referrerPolicy="no-referrer"
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-500"
                         />
-                        <span className="absolute bottom-2 left-2 px-2.5 py-1 bg-slate-900/80 backdrop-blur-sm rounded-lg text-[9px] text-amber-300 font-bold uppercase font-mono border border-slate-700">
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-xs font-bold gap-1">
+                          <Maximize2 className="h-4 w-4 text-amber-300" />
+                          <span>크게 기사 보기</span>
+                        </div>
+                        <span className="absolute bottom-2 left-2 px-2.5 py-1 bg-slate-900/80 backdrop-blur-sm rounded-lg text-[9px] text-amber-300 font-bold uppercase font-mono border border-slate-700 z-10 animate-pulse">
                           {selectedNewspaper.fileType === 'pdf' ? '📖 PDF 데이터 보관본' : '🖼️ 이미지 파일 지면'}
                         </span>
                       </div>
@@ -861,6 +925,300 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser }: Ne
               </div>
 
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ──────────────────────────────────────────────────────────
+          NEWSPAPER IMAGE ZOOM / LIGHTBOX OVERLAY
+          ────────────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {zoomedPaper && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[60] flex flex-col p-4 select-none"
+          >
+            {/* Lightbox Header Controls */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 text-white border-b border-slate-850 pb-4 mb-4 select-text">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-[#D9A441]/10 text-[#D9A441] rounded-lg">
+                  <BookOpen className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold tracking-tight">🔍 {zoomedPaper.title} 원본 지면 보기</h3>
+                  <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+                    {zoomedPaper.year}년 {zoomedPaper.month}월호 • 마우스 휠, 드래그, 또는 조절 장치로 확대 및 회전 최적화
+                  </p>
+                </div>
+              </div>
+
+              {/* Manipulation Control Center */}
+              <div className="flex flex-wrap items-center gap-2 bg-slate-900 border border-slate-800 p-1.5 rounded-2xl md:mx-auto">
+                <button
+                  type="button"
+                  onClick={() => setZoomScale(prev => Math.max(prev - 0.25, 0.5))}
+                  className="p-1 px-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 hover:text-white transition-all text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  title="축소"
+                >
+                  <ZoomOut className="h-3.5 w-3.5" />
+                  <span>축소</span>
+                </button>
+                
+                <span className="text-[10px] font-mono text-amber-400 px-2 font-bold min-w-[50px] text-center bg-slate-950 py-1 rounded-lg">
+                  {Math.round(zoomScale * 100)}%
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setZoomScale(prev => Math.min(prev + 0.25, 3))}
+                  className="p-1 px-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 hover:text-white transition-all text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  title="확대"
+                >
+                  <ZoomIn className="h-3.5 w-3.5" />
+                  <span>확대</span>
+                </button>
+
+                <div className="w-[1px] h-4 bg-slate-800 mx-1" />
+
+                <button
+                  type="button"
+                  onClick={() => setRotation(prev => (prev + 90) % 360)}
+                  className="p-1 px-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 hover:text-white transition-all text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  title="회전"
+                >
+                  <RotateCw className="h-3.5 w-3.5" />
+                  <span>회전</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setZoomScale(1);
+                    setRotation(0);
+                  }}
+                  className="p-1 px-2.5 bg-slate-950 hover:bg-slate-850 rounded-xl text-slate-400 hover:text-slate-200 transition-all text-[10px] font-bold cursor-pointer mr-1"
+                >
+                  초기화
+                </button>
+
+                <div className="w-[1px] h-4 bg-slate-800 mx-1" />
+
+                {/* Sidebar Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowZoomSidebar(prev => !prev)}
+                  className={`p-1 px-2.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all ${
+                    showZoomSidebar 
+                      ? 'bg-amber-500 hover:bg-amber-600 text-slate-950 font-black' 
+                      : 'bg-slate-800 text-slate-300 hover:text-white'
+                  }`}
+                  title="독자 소통방 토글"
+                >
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  <span>{showZoomSidebar ? '소통방 숨기기' : '소통방 & 댓글 보기'}</span>
+                </button>
+              </div>
+
+              {/* Action Actions */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => startDownload(zoomedPaper)}
+                  className="py-2 px-3.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span>전체 파일 다운로드</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setZoomedPaper(null)}
+                  className="p-2 bg-slate-800 hover:bg-rose-600 hover:text-white text-slate-300 rounded-xl transition-all cursor-pointer"
+                  title="닫기 (Esc)"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Split Viewport Layout Container */}
+            <div className="flex-1 flex flex-col lg:flex-row gap-4 overflow-hidden min-h-0">
+              
+              {/* Display Canvas Frame Container */}
+              <div className="flex-1 overflow-auto flex items-center justify-center p-4 max-h-full cursor-grab active:cursor-grabbing relative custom-scrollbar bg-black/20 rounded-2xl border border-slate-900">
+                <div 
+                  className="transition-transform duration-200 ease-out origin-center"
+                  style={{ transform: `scale(${zoomScale}) rotate(${rotation}deg)` }}
+                >
+                  {zoomedPaper.fileDataUrl ? (
+                    <img
+                      src={zoomedPaper.fileDataUrl}
+                      alt={zoomedPaper.title}
+                      referrerPolicy="no-referrer"
+                      className="max-h-[68vh] lg:max-h-[82vh] object-contain shadow-2xl rounded-lg pointer-events-auto border-2 border-slate-850"
+                    />
+                  ) : (
+                    <div className="text-center py-20 text-slate-500">
+                      <BookOpen className="h-16 w-16 mx-auto text-slate-750 mb-3" />
+                      <p className="text-sm font-semibold">고해상도 원본 이미지를 찾을 수 없습니다.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Sidebar: Details & Live Comments */}
+              {showZoomSidebar && (
+                <div className="w-full lg:w-[380px] bg-slate-900 border border-slate-800 rounded-2xl flex flex-col max-h-[40vh] lg:max-h-full overflow-hidden shrink-0 select-text">
+                  <div className="p-4 border-b border-slate-850 bg-slate-950/60 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-[#D9A441]" />
+                      <span className="text-xs font-bold text-white">독자 한마디 & 소통 정보</span>
+                    </div>
+                    <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-bold">
+                      {comments.length}개
+                    </span>
+                  </div>
+
+                  {/* Scrollable comment list inside Zoom Sidebar */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-slate-900/40">
+                    {commentsLoading ? (
+                      <div className="flex items-center justify-center py-8 text-slate-400 gap-2">
+                        <RefreshCw className="h-4 w-4 animate-spin text-[#D9A441]" />
+                        <span className="text-[10px]">댓글 동기화 중...</span>
+                      </div>
+                    ) : comments.length === 0 ? (
+                      <div className="text-center py-10 text-slate-500 border border-dashed border-slate-800 rounded-xl bg-slate-950/25">
+                        <MessageSquare className="h-8 w-8 text-slate-750 mx-auto mb-2" />
+                        <p className="text-[10.5px]">작성된 독자 의견이 없습니다.</p>
+                        <p className="text-[9px] text-slate-600 mt-0.5">화면을 보며 아래 양식으로 첫 남김을 전해 보세요!</p>
+                      </div>
+                    ) : (
+                      comments.map((comment) => (
+                        <div key={comment.id} className="p-3 bg-slate-950/40 border border-slate-850 rounded-xl space-y-1.5 hover:border-slate-750 transition-colors">
+                          <div className="flex items-center justify-between gap-2 border-b border-slate-950 pb-1 flex-wrap">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[9px] bg-indigo-950/60 text-indigo-300 px-1.5 py-0.5 rounded font-bold border border-indigo-900/30">
+                                {comment.authorDept}
+                              </span>
+                              {comment.authorGrade && (
+                                <span className="text-[9px] bg-amber-950/60 text-amber-300 px-1.5 py-0.5 rounded font-bold border border-amber-900/30">
+                                  {comment.authorGrade}
+                                </span>
+                              )}
+                              <span className="text-[9.5px] text-slate-400">{comment.authorClassNumber}</span>
+                              <span className="text-[10px] text-slate-200 font-bold">{comment.authorName}</span>
+                            </div>
+                            
+                            {/* Deletion Option */}
+                            {(currentUser?.role === 'admin' || currentUser?.role === 'teacher') && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteComment(comment.id)}
+                                className="text-slate-500 hover:text-rose-400 p-0.5 transition-colors cursor-pointer"
+                                title="댓글 삭제"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-300 whitespace-pre-line leading-relaxed select-text">{comment.content}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Compact comment writer form inside Zoom Sidebar */}
+                  <div className="p-4 border-t border-slate-850 bg-slate-950/80 space-y-2 shrink-0">
+                    <h4 className="text-[10.5px] font-bold text-slate-300 flex items-center gap-1">
+                      <Plus className="h-3.5 w-3.5 text-[#D9A441]" />
+                      <span>의견 실시간 등록하기</span>
+                    </h4>
+
+                    <form onSubmit={handleCommentSubmit} className="space-y-2">
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <input
+                          type="text"
+                          required
+                          value={commentDept}
+                          onChange={(e) => setCommentDept(e.target.value)}
+                          placeholder="학과/부서"
+                          className="text-[10.5px] py-1.5 px-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 placeholder-slate-500 font-medium focus:outline-none focus:border-[#D9A441]"
+                        />
+                        <input
+                          type="text"
+                          required
+                          value={commentName}
+                          onChange={(e) => setCommentName(e.target.value)}
+                          placeholder="이름"
+                          className="text-[10.5px] py-1.5 px-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 placeholder-slate-500 font-medium focus:outline-none focus:border-[#D9A441]"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {!isTeacher && (
+                          <select
+                            value={commentGrade}
+                            onChange={(e) => setCommentGrade(e.target.value)}
+                            className="text-[10.5px] py-1.5 px-1.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 focus:outline-none focus:border-[#D9A441]"
+                          >
+                            <option value="1학년">1학년</option>
+                            <option value="2학년">2학년</option>
+                            <option value="3학년">3학년</option>
+                          </select>
+                        )}
+                        <input
+                          type="text"
+                          required
+                          value={commentClassNum}
+                          onChange={(e) => setCommentClassNum(e.target.value)}
+                          placeholder={isTeacher ? "직함 (교사, 부장 등)" : "반/번호 (예: 2반 15번)"}
+                          className={`text-[10.5px] py-1.5 px-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 placeholder-slate-500 font-medium focus:outline-none focus:border-[#D9A441] ${isTeacher ? 'col-span-2' : ''}`}
+                        />
+                      </div>
+
+                      <div className="relative">
+                        <textarea
+                          required
+                          rows={2}
+                          maxLength={300}
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          placeholder="기사를 읽고 느낀 점이나 격려의 소회를 적어주세요..."
+                          className="w-full text-[10.5px] py-1.5 px-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:border-[#D9A441] resize-none"
+                        />
+                      </div>
+
+                      {commentError && (
+                        <p className="text-[9px] text-rose-400 font-semibold">{commentError}</p>
+                      )}
+
+                      {commentSuccess && (
+                        <p className="text-[9px] text-emerald-400 font-semibold">의견이 등록 완료되었습니다!</p>
+                      )}
+
+                      <button
+                        type="submit"
+                        className="w-full py-2 bg-[#D9A441] hover:bg-[#c29235] text-slate-950 hover:text-white font-bold rounded-lg text-[10.5px] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        <span>의견 보내기</span>
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Scale Hint Bar */}
+            <div className="mt-4 flex items-center justify-between text-slate-500 text-[10px] font-mono">
+              <span>대구일마이스터고 신문고 원본 돋보기 뷰어</span>
+              <div className="flex gap-4">
+                <span>• 마우스 드래그/휠 스크롤 또는 터치 제스처 연동</span>
+                <span>• 닫기 버튼 또는 ESC 키로 닫기</span>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

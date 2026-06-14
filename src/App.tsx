@@ -32,6 +32,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'intro' | 'newspapers' | 'interviews' | 'inquiries' | 'notices' | 'admin'>('home');
+  const [selectedPaperId, setSelectedPaperId] = useState<string | null>(null);
 
   // Load all data on mount
   const loadAllData = async () => {
@@ -334,7 +335,12 @@ export default function App() {
                         {newspapers.slice(0, 3).map((paper) => (
                           <div 
                             key={paper.id} 
-                            className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
+                            onClick={() => {
+                              setSelectedPaperId(paper.id);
+                              setActiveTab('newspapers');
+                            }}
+                            className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between group cursor-pointer"
+                            title="클릭하여 지면 크게 보기 & 댓글 달기"
                           >
                             <div className="h-28 bg-slate-50 relative overflow-hidden">
                               {paper.fileDataUrl ? (
@@ -344,22 +350,28 @@ export default function App() {
                                   <BookOpen className="h-8 w-8" />
                                 </div>
                               )}
-                              <span className="absolute top-2 left-2 bg-[#1E3A5F] text-white text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">
+                              <div className="absolute inset-0 bg-[#1E3A5F]/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span className="bg-white/90 text-[#1E3A5F] px-2 py-1 rounded-lg text-[9px] font-bold shadow-xs flex items-center gap-1">
+                                  <span>🔍 지면 크게 보기</span>
+                                </span>
+                              </div>
+                              <span className="absolute top-2 left-2 bg-[#1E3A5F] text-white text-[8px] font-bold px-1.5 py-0.5 rounded uppercase z-10">
                                 {paper.year}년 {paper.month}월호
                               </span>
                             </div>
                             <div className="p-3 flex-1 flex flex-col justify-between">
                               <h4 className="text-[11.5px] font-bold text-slate-800 line-clamp-1 group-hover:text-[#1E3A5F] transition-colors">{paper.title}</h4>
                               <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5">
-                                <span className="text-[9px] text-slate-400 font-mono">Size/Type: PDF</span>
+                                <span className="text-[10px] text-[#D9A441] font-bold group-hover:underline">지면 보러 가기 →</span>
                                 <button
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // Prevent opening the detail view
                                     const link = document.createElement('a');
                                     link.href = paper.fileDataUrl || '#';
                                     link.download = paper.fileName || 'meister_newspaper.pdf';
                                     link.click();
                                   }}
-                                  className="text-[10px] text-indigo-700 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                                  className="text-[10px] text-indigo-700 font-bold hover:underline flex items-center gap-1 cursor-pointer p-1 rounded-md hover:bg-slate-50"
                                   title="다운로드"
                                 >
                                   <Download className="h-3 w-3" />
@@ -520,6 +532,8 @@ export default function App() {
                   newspapers={newspapers} 
                   onRefresh={loadAllData} 
                   currentUser={currentUser} 
+                  initialSelectedId={selectedPaperId}
+                  onClearInitialId={() => setSelectedPaperId(null)}
                 />
               </motion.div>
             )}

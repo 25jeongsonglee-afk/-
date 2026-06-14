@@ -15,6 +15,12 @@ async function startServer() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
+  // Google Site Verification Route
+  app.get("/googlec25894882109dde6.html", (req, res) => {
+    res.setHeader("Content-Type", "text/html");
+    res.send("google-site-verification: googlec25894882109dde6.html");
+  });
+
   // API Route: Send OTP Email
   app.post("/api/send-otp", async (req, res) => {
     const { email, code } = req.body;
