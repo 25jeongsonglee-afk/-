@@ -26,7 +26,7 @@
     <!-- Service Worker Activation -->
     <script>
       if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
+        const registerSW = () => {
           navigator.serviceWorker.register("/sw.js")
             .then((registration) => {
               console.log("[PWA Status] ServiceWorker activated successfully with scope:", registration.scope);
@@ -34,7 +34,12 @@
             .catch((error) => {
               console.error("[PWA Status] ServiceWorker activation failed:", error);
             });
-        });
+        };
+        if (document.readyState === "complete" || document.readyState === "interactive") {
+          registerSW();
+        } else {
+          window.addEventListener("load", registerSW);
+        }
       }
     </script>
   </body>

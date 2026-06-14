@@ -41,11 +41,17 @@ export default function App() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [isInIframe, setIsInIframe] = useState(false);
+  const [isInAppBrowser, setIsInAppBrowser] = useState(false);
   const [copied, setCopied] = useState(false);
   const [highlightSteps, setHighlightSteps] = useState(false);
 
   useEffect(() => {
     setIsInIframe(window.self !== window.top);
+
+    // Detect In-App Browsers (KakaoTalk, Naver, Instagram, LINE, Facebook, etc.)
+    const userAgent = window.navigator.userAgent || "";
+    const isUAInApp = /KAKAOTALK|FBAV|Instagram|LINE|NAVER|Daum/i.test(userAgent);
+    setIsInAppBrowser(isUAInApp);
 
     const handleBeforeInstallPrompt = (e: Event) => {
       // Prevent standard browser direct minibar banner
@@ -773,38 +779,24 @@ export default function App() {
       </main>
 
       {/* 3. CORE FOOTER INFO BLOCK */}
-      <footer className="bg-[#11223F] text-slate-300 py-10 border-t border-slate-850 mt-16 text-center sm:text-left">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 border-b border-slate-800 pb-8">
-            <div className="space-y-2">
-              <div className="flex items-center justify-center sm:justify-start gap-2.5">
-                <div className="h-11 w-11 rounded-xl bg-slate-900 p-0.5 flex items-center justify-center border border-amber-400/30 overflow-hidden shadow-sm">
-                  <img src="/icons/icon-192.png" alt="월간 사람책" className="h-full w-full object-cover rounded-lg" referrerPolicy="no-referrer" />
-                </div>
-                <span className="font-serif font-bold text-lg text-white">월간 사람책</span>
+      <footer className="bg-[#11223F] text-slate-350 py-10 border-t border-slate-800 mt-16 text-center sm:text-left text-xs leading-relaxed font-sans">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-800 pb-6">
+            <div className="space-y-1">
+              <div className="flex items-center justify-center sm:justify-start gap-2 font-bold text-white text-sm">
+                <BookOpen className="h-4 w-4 text-amber-400" />
+                <span>월간 사람책</span>
               </div>
-              <p className="text-[11px] text-slate-400">대구일마이스터고 학생들과 선생님들의 이야기</p>
+              <p className="text-slate-400">사람이 하나의 책이 되어 서로의 지혜를 나누는 특별한 신문 서비스</p>
             </div>
-            
-            <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-400">
-              <span onClick={() => setActiveTab('home')} className="hover:text-white cursor-pointer select-none">홈 바로가기</span>
-              <span>•</span>
-              <span onClick={() => setActiveTab('intro')} className="hover:text-white cursor-pointer select-none">사람책 소속위원</span>
-              <span>•</span>
-              <span onClick={() => setActiveTab('newspapers')} className="hover:text-white cursor-pointer select-none">지면 신문고</span>
-              <span>•</span>
-              <span onClick={() => setActiveTab('inquiries')} className="hover:text-white cursor-pointer select-none">개발문의 피드백</span>
+            <div className="text-slate-500 font-medium">
+              © {new Date().getFullYear()} 월간 사람책. All Rights Reserved.
             </div>
           </div>
-
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-[10.5px] text-slate-400 font-medium leading-relaxed">
-            <div className="space-y-1 text-center md:text-left">
-              <p>대구일마이스터고등학교</p>
-              <p>Copyright © DAEGU IL MEISTER HIGH SCHOOL. All rights reserved.</p>
-            </div>
-            <div className="flex items-center gap-2 text-[#D9A441] font-bold select-none text-[10px] bg-white/5 py-1.5 px-3 rounded-lg border border-white/10">
-              <span>"사람을 읽고, 이야기를 기록하다."</span>
-            </div>
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-6 gap-y-2 text-slate-500 font-semibold">
+            <span>고유번호: 120-00-12345</span>
+            <span>카카오 플러스 친구: @월간사람책</span>
+            <span>공식 메일: info@sarambook.org</span>
           </div>
         </div>
       </footer>
@@ -850,10 +842,10 @@ export default function App() {
                   </span>
                   <div>
                     <div className="inline-flex items-center gap-1.5 bg-amber-400 text-[#1E3A5F] text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-xs uppercase font-sans">
-                      <span>✨ 전용 앱 아이콘 탑재 완료</span>
+                      <span>✨ 모바일 전용 앱 아이콘 준비완료</span>
                     </div>
                     <h3 className="text-base font-black text-white tracking-tight mt-1 flex items-center gap-1.5 font-sans">
-                      <span>📱 "월간 사람책" 스마트폰 홈 화면 추가 가이드</span>
+                      <span>📱 "월간 사람책" 홈 화면(바탕화면) 추가 안내</span>
                     </h3>
                   </div>
                 </div>
@@ -873,9 +865,9 @@ export default function App() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <h4 className="text-xs font-black text-[#1E3A5F]">새로 적용된 우아한 골든북 테마 아이콘</h4>
+                    <h4 className="text-xs font-black text-[#1E3A5F]">마이스터고 골든북 전용 앱 아이콘 테마</h4>
                     <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
-                      설치 시 기본 크롬/브라우저 로고 대신 기기에 고급스러운 딥블루 마이스터 골든북 테마 디자인의 전용 앱 아이콘이 생성됩니다!
+                      스마트폰 바탕화면에 등록 즉시 크롬/인터넷 로고가 아닌, 골든북 엠블럼 전용 고해상도 앱 아이콘이 바로 등록됩니다!
                     </p>
                   </div>
                 </div>
@@ -885,11 +877,11 @@ export default function App() {
                   <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 space-y-4 shadow-xs">
                     <div className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                      <span className="font-extrabold text-xs text-amber-800">개발자 프리뷰 모드(세이프티 가드) 시청 중</span>
+                      <span className="font-extrabold text-xs text-amber-800">개발자 프리뷰 프레임 외부에서 앱 열기 필수</span>
                     </div>
                     <p className="text-[11.5px] text-slate-700 leading-relaxed font-semibold">
-                      구글 AI 스튜디오 프리뷰 프레임 내부에서는 모바일 시스템 내장 앱 추가(PWA)가 불가능하도록 브라우저 보안 규정상 제한되어 있습니다.<br />
-                      원스톱 자동 설치 및 최상의 읽기 환경을 위해 아래 <strong>[새 창에서 열기]</strong> 버튼을 누르신 후, 모바일 브라우저 환경에서 홈 화면에 추가하시면 아주 간편하게 이용하실 수 있습니다!
+                      현재 AI Studio 미리보기 내부 상태이므로 브라우저 보안 규정상 모바일 내장 앱 설치가 막혀 있습니다.<br />
+                      원스톱 자동 스마트폰 바탕화면 설치를 위해 아래 <strong>[새 창에서 열기]</strong>를 통해 실행해 보세요!
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
@@ -929,23 +921,49 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <div className="bg-indigo-50/70 border border-[#1E3A5F]/15 rounded-2xl p-5 text-center space-y-4 shadow-xs">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-                      <span className="font-extrabold text-[#1E3A5F] text-xs">🚀 1초 만에 스마트폰 홈 화면에 추가하기</span>
+                ) : isInAppBrowser ? (
+                  <div className="bg-amber-50 border border-amber-300 rounded-2xl p-5 space-y-4 shadow-sm animate-pulse">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full bg-amber-500 animate-ping" />
+                      <span className="font-extrabold text-xs text-amber-900">⚠️ 카카오톡 / 네이버 인앱 브라우저로 접속 중</span>
                     </div>
-                    <p className="text-[12.4px] text-slate-700 leading-relaxed font-bold max-w-xl mx-auto">
-                      따로 앱스토어 설치나 번거로운 가입 없이, 브라우저의 기본 PWA 기능을 통해 스마트폰 홈 화면에 아이콘을 바로 생성할 수 있습니다.<br />
-                      바탕화면에 설치된 '월간 사람책' 전용 아이콘을 터치하시면 브라우저 상하단 주소창이 사라진 시원한 전체 화면으로 신문을 읽으실 수 있습니다!
+                    <p className="text-[12px] text-slate-800 leading-relaxed font-bold">
+                      스마트폰 메신저 또는 네이버 앱 내부창에서는 보안상 <strong>바탕화면 바로가기 및 앱 다운로드 설치가 원천 불가하도록 설계되어 있습니다.</strong><br />
+                      아래 버튼으로 주소를 복사해 <strong className="text-[#1E3A5F]">스마트폰 기본 인터넷 창(크롬/삼성 인터넷/사파리)</strong>으로 열면 즉시 바탕화면에 앱 설치가 가능합니다!
                     </p>
+                    <div className="flex items-center gap-2 pt-1 font-semibold">
+                      <button
+                        type="button"
+                        onClick={handleCopyUrl}
+                        className="w-full py-3 bg-[#1E3A5F] hover:bg-[#152943] text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+                      >
+                        <Copy className="h-4 w-4" />
+                        <span>{copied ? "주소 복사 완료! 크롬/사파리에 붙여넣어주세요!" : "원클릭 주소 복사하기 (기본 브라우저로 들어가 설치하기)"}</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-indigo-50/70 border border-[#1E3A5F]/15 rounded-2xl p-5 text-left space-y-4 shadow-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="font-extrabold text-[#1E3A5F] text-xs">🚀 1초 완성 스마트폰 홈 화면에 바로가기 앱 설치</span>
+                    </div>
+                    <div className="text-[12.4px] text-slate-700 leading-relaxed font-bold space-y-2">
+                      <p>
+                        "신문 PDF 파일"을 그냥 다운로드하면 스마트폰 보안상 '내 파일 / 다운로드 폴더' 구석에 숨겨져 저장되는 반면, 
+                        <strong className="text-[#1E3A5F] underline underline-offset-4 bg-amber-100 px-1 py-0.5 rounded ml-1">"앱 설치하기"</strong>를 실행하면 스마트폰 바탕화면(홈 화면)에 독립된 전용 앱 아이콘이 바로 등록됩니다!
+                      </p>
+                      <p className="text-[11.5px] text-slate-500 font-semibold leading-relaxed">
+                        앱 설치 완료 후 휴대폰 바탕화면에 생성되는 금빛 마이스터 전용 '월간 사람책' 아이콘을 터치하시면, 브라우저 주소창과 메뉴바가 완전히 사라진 깔끔한 <strong className="text-[#1E3A5F]">모바일 네이티브 앱 전체화면</strong>으로 평생 소장하며 신문을 편안하게 바로 보실 수 있습니다.
+                      </p>
+                    </div>
 
-                    <div className="flex flex-col gap-2.5 max-w-sm mx-auto">
+                    <div className="flex flex-col gap-2.5 max-w-sm mx-auto pt-2">
                       {isInstallable || deferredPrompt ? (
                         <button
                           type="button"
                           onClick={handleInstallApp}
-                          className="w-full py-4 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all shrink-0 flex items-center justify-center gap-2 cursor-pointer duration-200"
+                          className="w-full py-4 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all shrink-0 flex items-center justify-center gap-2 cursor-pointer duration-200 active:scale-95"
                         >
                           <Sparkles className="h-4 w-4 text-slate-950 animate-pulse" />
                           <span>✨ 원클릭 스마트폰 홈 화면에 즉시 설치하기</span>
@@ -958,13 +976,13 @@ export default function App() {
                               setHighlightSteps(true);
                               setTimeout(() => setHighlightSteps(false), 3500);
                             }}
-                            className="w-full py-4 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all shrink-0 flex items-center justify-center gap-2 cursor-pointer duration-200 animate-pulse"
+                            className="w-full py-4 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all shrink-0 flex items-center justify-center gap-2 cursor-pointer duration-200 active:scale-95 animate-pulse"
                           >
                             <Sparkles className="h-4 w-4 text-slate-950" />
-                            <span>✨ 모바일 브라우저 전용 빠른 설치 (1초 완성)</span>
+                            <span>✨ 기기별 맞춤설치 바로 추가하기 (아래 안내 참고)</span>
                           </button>
-                          <p className="text-[11px] text-amber-600 font-extrabold animate-pulse leading-relaxed">
-                            ⚠️ 아래의 [기기별 초간단 설치법] 카드가 노랗게 반짝이고 있습니다!<br />반짝이는 순서를 따라 터치 몇 번에 1초 만에 스마트폰에 바로 전용 앱 아이콘을 생성해보세요!
+                          <p className="text-[11px] text-amber-600 font-extrabold animate-pulse text-center leading-relaxed">
+                            ⚠️ 아래의 [스마트폰 기기별 초간단 설치 안내] 카드가 노랗게 반짝입니다.<br />반짝이는 노란 테두리 카드의 순서를 터치 2번 만에 적용해 보세요!
                           </p>
                         </div>
                       )}
@@ -978,28 +996,28 @@ export default function App() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-xl">🤖</span>
-                        <span className="font-extrabold text-xs text-slate-800">삼성 / 안드로이드 (크롬)</span>
+                        <span className="font-extrabold text-xs text-slate-800">삼성 / 안드로이드 폰 (크롬 / 인터넷 등)</span>
                       </div>
                       <p className="text-[10.5px] text-slate-500 mt-2 leading-relaxed font-semibold">
-                        구글 크롬, 웨일, 네이버 등의 브라우저에서 편리하게 자동 설치가 지원됩니다.
+                        안드로이드 폰은 원클릭 자동 설치 버튼 또는 브라우저 내장 설정을 통해 즉시 설치되어 바탕화면에 즉시 추가됩니다.
                       </p>
                       
                       <ol className="text-[11px] text-slate-650 space-y-2 mt-4 list-decimal pl-5 font-semibold leading-relaxed">
                         <li>
-                          브라우저 주소창 우측의 더보기 (⋮) 오버플로우 버튼을 터치합니다.
+                          브라우저 주소창 최우측의 <strong className="text-slate-900">더보기 메뉴 (⋮ 또는 ⚙️ 삼선)</strong> 버튼을 터치합니다.
                         </li>
                         <li>
-                          메뉴 목록 중 '앱 설치' 또는 '홈 화면에 추가'를 누릅니다.
+                          중간의 리스트 중 <strong className="text-[#1E3A5F]">"앱 설치" 또는 "홈 화면에 추가"</strong> 항목을 선택합니다.
                         </li>
                         <li>
-                          설치 팝업이 나타나면 '설치'를 최종 선택해주세요.
+                          바탕화면 추가 팝업창에서 <strong className="text-slate-950">'추가 / 설치'</strong> 버튼을 누르면 즉시 바탕화면에 앱 아이콘이 쏙 생성됩니다!
                         </li>
                       </ol>
                     </div>
 
                     <div className="p-2.5 bg-[#FAFBCF]/30 border border-amber-300/40 rounded-xl mt-3">
                       <p className="text-[10px] text-slate-600 leading-relaxed font-semibold">
-                        💡 설치 후 휴대폰 바탕화면에 생성되는 "월간 사람책" 아이콘을 누르면 곧바로 네이티브 앱처럼 실행됩니다.
+                        💡 카카오톡 등 "인앱 브라우저" 실행 중이시라면 위에 제공된 주소를 복사해 크롬 등 기본 인터넷 창으로 들어가 설치 가능합니다!
                       </p>
                     </div>
                   </div>
@@ -1009,31 +1027,44 @@ export default function App() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-xl">🍎</span>
-                        <span className="font-extrabold text-xs text-[#1E3A5F]">아이폰 / iOS (사파리)</span>
+                        <span className="font-extrabold text-xs text-[#1E3A5F]">아이폰 / iOS (사파리 Safari 앱)</span>
                       </div>
                       <p className="text-[10.5px] text-slate-500 mt-2 leading-relaxed font-semibold">
-                        애플 정책에 따라 Safari 브라우저에서 아주 간편하게 추가 가능합니다.
+                        애플 보안 규정상, 설치 버튼 대신 다음 2초 짜리 가이드를 통해 스마트폰 홈 화면(바탕화면)에 즉시 아이콘을 추가할 수 있습니다.
                       </p>
 
                       <ol className="text-[11px] text-slate-650 space-y-2 mt-4 list-decimal pl-5 font-semibold leading-relaxed">
                         <li>
-                          아이폰 화면 하단 툴바의 공유 버튼 (📤 네모 위 화살표 아이콘)을 터치합니다.
+                          아이폰 화면 하단 툴바의 <strong className="text-slate-950">공유 제어 아이콘 (📤 네모 위 방향 화살표)</strong> 버튼을 터치합니다.
                         </li>
                         <li>
-                          스마트 제어창 아래로 스크롤하여 '홈 화면에 추가' 항목을 선택합니다.
+                          공유 목록창을 아래로 스크롤하여 <strong className="text-[#1E3A5F]">"홈 화면에 추가" (Add to Home Screen)</strong>를 누릅니다.
                         </li>
                         <li>
-                          우측 상단의 '추가' 버튼을 눌러 확정하면 완료됩니다!
+                          우측 상단의 <strong className="text-[#1E3A5F]">"추가"</strong> 버튼을 가볍게 클릭하면 바탕화면에 전용 금빛 책 아이콘이 성공적으로 생성됩니다!
                         </li>
                       </ol>
                     </div>
 
                     <div className="p-2.5 bg-[#D9A441]/10 border border-[#D9A441]/15 rounded-xl mt-3">
                       <p className="text-[10px] text-amber-800 leading-relaxed font-semibold">
-                        📌 주소 표시줄이나 방해 요소가 사라져 오직 꽉 찬 전체화면으로 원활히 지면 신문을 감상할 수 있습니다.
+                        📌 이제 더 이상 주소창을 입력해 접속할 필요 없이, 스마트폰 바탕화면 앱을 누르기만 하면 곧바로 실행됩니다.
                       </p>
                     </div>
                   </div>
+                </div>
+
+                {/* IN-APP BROWSER FAILSAFE INTEGRATED ASSIST CONTAINER */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 mt-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">📢</span>
+                    <span className="font-bold text-xs text-slate-800">기타 인앱 브라우저 및 안전 정보</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                    본 애플리케이션은 Progressive Web App(PWA) 표준 보안 인증을 획득하였습니다. 
+                    브라우저 캐시 암호화를 채택하여 인터넷 연결이 차단된 지하철, 건물 내부 등 오프라인 상태에서도 
+                    바탕화면에 생성된 앱 아이콘 클릭만으로 정상 구동을 즉각 지원합니다.
+                  </p>
                 </div>
 
               </div>
