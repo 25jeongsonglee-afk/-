@@ -127,7 +127,7 @@ export default function App() {
   <script>
     // Automating redirect
     setTimeout(() => {
-      window.location.href = "https://ais-pre-zo56alaym5tjyzhu4dalh6-572787846781.asia-northeast1.run.app";
+      window.location.href = "${window.location.origin}";
     }, 1500);
   </script>
 </head>
@@ -143,7 +143,7 @@ export default function App() {
     </div>
     <h1>월간 사람책</h1>
     <p>대구일마이스터고 사람책 신문 플랫폼<br>전용 모바일/PC 로컬 실행기를 기동하고 있습니다...</p>
-    <a href="https://ais-pre-zo56alaym5tjyzhu4dalh6-572787846781.asia-northeast1.run.app" class="btn">
+    <a href="${window.location.origin}" class="btn">
       <span>지금 수동 입장하기 ➡</span>
     </a>
   </div>
@@ -162,7 +162,7 @@ export default function App() {
   };
 
   const handleCopyUrl = () => {
-    navigator.clipboard.writeText("https://ais-pre-zo56alaym5tjyzhu4dalh6-572787846781.asia-northeast1.run.app").then(() => {
+    navigator.clipboard.writeText(window.location.origin).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
@@ -854,8 +854,8 @@ export default function App() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6 border-b border-slate-800 pb-8">
             <div className="space-y-2">
               <div className="flex items-center justify-center sm:justify-start gap-2.5">
-                <div className="h-11 w-11 rounded-xl bg-white p-1 flex items-center justify-center border border-slate-700 shadow-sm">
-                  <MeisterLogo className="h-full w-full" />
+                <div className="h-11 w-11 rounded-xl bg-slate-900 p-0.5 flex items-center justify-center border border-amber-400/30 overflow-hidden shadow-sm">
+                  <img src="/icons/icon-192.png" alt="월간 사람책" className="h-full w-full object-cover rounded-lg" referrerPolicy="no-referrer" />
                 </div>
                 <span className="font-serif font-bold text-lg text-white">월간 사람책</span>
               </div>
@@ -915,16 +915,21 @@ export default function App() {
                   <X className="h-5 w-5" />
                 </button>
 
-                <div className="flex items-center gap-3">
-                  <span className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center border border-white/20 p-2 shadow-inner shrink-0">
-                    <MeisterLogo className="h-full w-full" />
+                <div className="flex items-center gap-3.5">
+                  <span className="h-14 w-14 bg-slate-900 rounded-2xl flex items-center justify-center border border-white/20 p-0.5 shadow-inner shrink-0 overflow-hidden">
+                    <img 
+                      src="/icons/icon-512.png" 
+                      alt="월간 사람책 전용 앱 아이콘 미리보기" 
+                      className="h-full w-full object-cover rounded-xl"
+                      referrerPolicy="no-referrer"
+                    />
                   </span>
                   <div>
-                    <div className="inline-flex items-center gap-1 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs uppercase">
-                      <span>로그인 필요 없음</span>
+                    <div className="inline-flex items-center gap-1.5 bg-amber-400 text-slate-1000 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-xs uppercase">
+                      <span>✨ 전용 앱 아이콘 탑재 완료</span>
                     </div>
-                    <h3 className="text-base font-bold text-white tracking-tight mt-1 flex items-center gap-1.5">
-                      <span>📱 "월간 사람책" 모바일 앱 설치</span>
+                    <h3 className="text-base font-black text-white tracking-tight mt-1 flex items-center gap-1.5 font-sans">
+                      <span>📱 "월간 사람책" 전용 앱 설치 안내</span>
                     </h3>
                   </div>
                 </div>
@@ -932,6 +937,24 @@ export default function App() {
 
               {/* Steps & Tab Content */}
               <div className="p-6 overflow-y-auto space-y-6 flex-1 text-slate-700">
+                {/* ICON PREVIEW HERO MINI-CARD */}
+                <div className="bg-gradient-to-br from-[#1E3A5F]/5 to-[#1E3A5F]/10 border border-[#1E3A5F]/10 rounded-2xl p-4.5 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                  <div className="relative shrink-0">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 to-[#D9A441] rounded-2xl blur opacity-30 animate-pulse" />
+                    <img 
+                      src="/icons/icon-192.png" 
+                      alt="설치용 아이콘 미리보기" 
+                      className="relative h-16 w-16 object-cover rounded-2xl shadow-md border border-amber-300" 
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-black text-[#1E3A5F]">새로 적용된 우아한 골든북 테마 아이콘</h4>
+                    <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
+                      설치 시 기본 크롬/브라우저 로고 대신 기기에 고급스러운 딥블루 마이스터 골드 테마 북 디자인의 고유 앱 단축 아이콘이 생성됩니다!
+                    </p>
+                  </div>
+                </div>
                 {/* DYNAMIC PWA INTUITIVE STATUS ROW */}
                 {isInIframe ? (
                   <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4.5 space-y-3 shadow-xs">
@@ -958,7 +981,7 @@ export default function App() {
                         <input
                           type="text"
                           readOnly
-                          value="https://ais-pre-zo56alaym5tjyzhu4dalh6-572787846781.asia-northeast1.run.app"
+                          value={window.location.origin}
                           className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-[10px] text-slate-600 outline-none w-full font-mono font-bold shadow-inner"
                         />
                         <div className="flex items-center gap-2 shrink-0">
@@ -980,7 +1003,7 @@ export default function App() {
                             )}
                           </button>
                           <a
-                            href="https://ais-pre-zo56alaym5tjyzhu4dalh6-572787846781.asia-northeast1.run.app"
+                            href={window.location.origin}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-3.5 py-2 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[10.5px] font-bold rounded-xl transition-all shrink-0 flex items-center justify-center gap-1 text-center shadow-xs"
