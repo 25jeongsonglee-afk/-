@@ -71,7 +71,8 @@ self.addEventListener("fetch", (event) => {
             return cachedResponse;
           }
           // Fallback to offline indicator for HTML page requests if Cache misses
-          if (event.request.mode === "navigate" || event.request.headers.get("accept").includes("text/html")) {
+          const acceptHeader = event.request.headers.get("accept");
+          if (event.request.mode === "navigate" || (acceptHeader && acceptHeader.includes("text/html"))) {
             return caches.match("/offline.html") || caches.match("/");
           }
         });
