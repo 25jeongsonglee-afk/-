@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Newspaper, User, NewspaperComment } from '../types';
 import { addNewspaper, deleteNewspaper, getNewspaperComments, addNewspaperComment, deleteNewspaperComment } from '../firebase';
-import { BookOpen, Search, Download, Trash, RefreshCw, Plus, FileText, Image as ImageIcon, Check, Calendar, AlertCircle, MessageSquare, Trash2, X, Shield, Users, Maximize2, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
+import { BookOpen, Search, Download, Trash, RefreshCw, Plus, FileText, Image as ImageIcon, Check, Calendar, AlertCircle, MessageSquare, Trash2, X, Shield, Users, Maximize2, ZoomIn, ZoomOut, RotateCw, Smartphone, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface NewspaperViewProps {
@@ -10,9 +10,10 @@ interface NewspaperViewProps {
   currentUser: User | null;
   initialSelectedId?: string | null;
   onClearInitialId?: () => void;
+  onRequestAppInstall?: () => void;
 }
 
-export default function NewspaperView({ newspapers, onRefresh, currentUser, initialSelectedId, onClearInitialId }: NewspaperViewProps) {
+export default function NewspaperView({ newspapers, onRefresh, currentUser, initialSelectedId, onClearInitialId, onRequestAppInstall }: NewspaperViewProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState<number | 'all'>('all');
   const [isAdding, setIsAdding] = useState(false);
@@ -25,6 +26,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
   const [fileBase64, setFileBase64] = useState<string>('');
   const [fileName, setFileName] = useState('');
   const [uploadError, setUploadError] = useState('');
+  const [downloadGuidePaper, setDownloadGuidePaper] = useState<Newspaper | null>(null);
 
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'librarian';
   const canManageNewspaper = currentUser?.role === 'admin' || currentUser?.role === 'librarian';
@@ -281,6 +283,10 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
     document.body.removeChild(link);
   };
 
+  const handleDownloadClick = (paper: Newspaper) => {
+    setDownloadGuidePaper(paper);
+  };
+
   return (
     <div id="newspapers-archive" className="space-y-6">
       {/* Top Banner Control Header */}
@@ -528,7 +534,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      startDownload(paper);
+                      handleDownloadClick(paper);
                     }}
                     className="w-full py-2 bg-white hover:bg-slate-100 text-[#1E3A5F] flex items-center justify-center gap-1.5 text-[11px] font-bold rounded-xl shadow cursor-pointer transition-colors"
                   >
@@ -562,7 +568,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
 
                   <div className="flex items-center justify-between gap-2">
                     <button
-                      onClick={() => startDownload(paper)}
+                      onClick={() => handleDownloadClick(paper)}
                       className="flex-1 py-2 bg-slate-50 hover:bg-[#1E3A5F]/5 border border-slate-200 hover:border-[#1E3A5F]/40 text-[#1E3A5F] font-bold text-[11px] rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                     >
                       <Download className="h-3.5 w-3.5" />
@@ -662,7 +668,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
 
                   <div className="space-y-2">
                     <button
-                      onClick={() => startDownload(selectedNewspaper)}
+                      onClick={() => handleDownloadClick(selectedNewspaper)}
                       className="w-full py-2.5 bg-[#D9A441] hover:bg-[#c29235] text-white text-xs font-bold rounded-xl shadow transition-all cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       <Download className="h-4 w-4" />
@@ -1037,7 +1043,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
                 <div className="flex items-center gap-1.5 sm:gap-2 self-end lg:self-auto shrink-0">
                   <button
                     type="button"
-                    onClick={() => startDownload(zoomedPaper)}
+                    onClick={() => handleDownloadClick(zoomedPaper)}
                     className="py-1.5 sm:py-2 px-2.5 sm:px-3.5 bg-slate-800 hover:bg-slate-700 text-amber-400 text-[10px] sm:text-xs font-bold rounded-xl shadow transition-all cursor-pointer flex items-center gap-1.5"
                   >
                     <Download className="h-3.5 w-3.5" />
@@ -1241,6 +1247,111 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
           </motion.div>
           );
         })()}
+      </AnimatePresence>
+
+      {/* 📱 모바일 홈 화면 바탕화면 안내 및 앱 추가 통합 유도 가이드 */}
+      <AnimatePresence>
+        {downloadGuidePaper && (
+          <div className="fixed inset-0 z-110 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDownloadGuidePaper(null)}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+            />
+            
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-200 overflow-hidden relative z-10 p-6 flex flex-col font-sans"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-9 w-9 bg-[#1E3A5F]/10 rounded-xl flex items-center justify-center text-[#1E3A5F]">
+                    <Smartphone className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 tracking-tight">바탕화면(홈 화면) 바로가기 & 파일 보관</h3>
+                    <p className="text-[10px] text-slate-500 font-bold font-mono">Mobile App Setup & File Save Assistance</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDownloadGuidePaper(null)}
+                  className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-all"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="space-y-4">
+                <div className="p-4 bg-amber-50/70 border border-amber-200/50 rounded-2xl">
+                  <p className="text-[11.5px] text-amber-900 font-bold leading-relaxed">
+                    ⚠️ 스마트폰(모바일)의 브라우저 보안 규정상, 일반 파일 다운로드는 바탕화면이 아닌 기기 내부의 <strong>'다운로드(Downloads)' 또는 '내 파일' 폴더</strong>로만 저장됩니다!
+                  </p>
+                </div>
+
+                <div className="p-4 bg-indigo-50/60 border border-[#1E3A5F]/10 rounded-2xl space-y-3.5">
+                  <h4 className="text-xs font-black text-[#1E3A5F] flex items-center gap-1.5">
+                    <Sparkles className="h-4 w-4 text-amber-500 fill-amber-500" />
+                    <span>휴대폰 바탕화면에 즉시 설치하는 법</span>
+                  </h4>
+                  
+                  <p className="text-[11px] text-slate-700 leading-relaxed font-semibold">
+                    매번 복잡한 주소를 주소창에 치고 들어올 필요가 전혀 없습니다! <br />
+                    아래 <strong>'📱 바탕화면에 앱 아이콘 생성'</strong> 버튼을 클릭하고 우아한 금빛 마이스터 전용 앱 아이콘을 바탕화면에 단 1초 만에 바로 추가해보세요. 터치 한 번에 시원한 전체 화면으로 상시 접속 가능합니다.
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-6 space-y-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const paper = downloadGuidePaper;
+                    setDownloadGuidePaper(null);
+                    if (onRequestAppInstall) {
+                      onRequestAppInstall();
+                    } else {
+                      alert('스마트폰 홈 화면(우측 상단 3개 점 ⋮ 또는 하단 공유출력 📤 버튼)에서 "홈 화면에 추가"를 누르시면 바탕화면에 전용 앱 아이콘이 바로 생성됩니다!');
+                    }
+                  }}
+                  className="w-full py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 duration-150 active:scale-95 cursor-pointer"
+                >
+                  <Smartphone className="h-4 w-4 text-slate-950" />
+                  <span>📱 바탕화면(홈 화면)에 바로가기 앱 설치하기</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (downloadGuidePaper) {
+                      startDownload(downloadGuidePaper);
+                    }
+                    setDownloadGuidePaper(null);
+                  }}
+                  className="w-full py-3 bg-slate-155 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 duration-150 cursor-pointer"
+                >
+                  <Download className="h-4 w-4 text-slate-500" />
+                  <span>📁 일반 파일(PDF)로 내 기기 내부 폴더에 저장하기</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDownloadGuidePaper(null)}
+                  className="w-full py-2 text-slate-400 hover:text-slate-650 font-bold text-[10.5px] transition-all text-center cursor-pointer"
+                >
+                  취소하기
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
     </div>
   );

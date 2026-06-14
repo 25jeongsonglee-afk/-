@@ -678,6 +678,7 @@ export default function App() {
                   currentUser={currentUser} 
                   initialSelectedId={selectedPaperId}
                   onClearInitialId={() => setSelectedPaperId(null)}
+                  onRequestAppInstall={handleInstallApp}
                 />
               </motion.div>
             )}
