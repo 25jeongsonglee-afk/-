@@ -8,7 +8,7 @@ import {
   updateDoc, deleteDoc, addDoc, onSnapshot, getDocFromServer, FirestoreError
 } from 'firebase/firestore';
 import firebaseConfig from './firebase-applet-config.json';
-import { User, UserRole, InterviewReservation, Newspaper, Inquiry, Notice } from './types';
+import { User, UserRole, InterviewReservation, Newspaper, Inquiry, Notice, NewspaperComment } from './types';
 
 // Check if Firebase is using custom/real config or placeholders
 const getActiveConfig = () => {
@@ -828,3 +828,85 @@ export async function deleteNotice(id: string): Promise<void> {
     setLocalData('notices', updated);
   }
 }
+
+// 6. NEWSPAPER COMMENTS SERVICES
+const INITIAL_COMMENTS: NewspaperComment[] = [
+  {
+    id: 'c1',
+    newspaperId: 'p1',
+    authorDept: '전기전자제어과',
+    authorGrade: '3학년',
+    authorClassNumber: '1반 15번',
+    authorName: '김태우',
+    content: '호국보훈의 달 특집 기사가 정말 감명 깊습니다. 특히 선배들이 다녀온 기동 훈련 취재는 마이스터고 학생으로서 큰 자부심을 가지게 만드네요!',
+    createdAt: '2026-06-13T11:20:00Z'
+  },
+  {
+    id: 'c2',
+    newspaperId: 'p1',
+    authorDept: '교무기획부',
+    authorGrade: undefined,
+    authorClassNumber: '교직원',
+    authorName: '장민철 교사',
+    content: '신문 자율동아리 학생들이 학업 와중에도 정성을 다해 신문을 편집해 준 과정이 고스란히 느껴집니다. 모든 학생독자가 꼭 읽어보았으면 좋겠습니다.',
+    createdAt: '2026-06-13T15:45:00Z'
+  }
+];
+
+export async function getNewspaperComments(newspaperId: string): Promise<NewspaperComment[]> {
+  if (isFirebaseActive()) {
+    try {
+      const q = query(collection(db, 'newspaper_comments'), where('newspaperId', '==', newspaperId));
+      const querySnapshot = await getDocs(q);
+      const items: NewspaperComment[] = [];
+      querySnapshot.forEach((docSnap) => {
+         items.push(docSnap.data() as NewspaperComment);
+      });
+      return items.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    } catch (error) {
+      return handleFirestoreError(error, OperationType.LIST, `newspaper_comments`);
+    }
+  } else {
+    const list = getLocalData<NewspaperComment>('newspaper_comments', INITIAL_COMMENTS);
+    return list
+      .filter((c) => c.newspaperId === newspaperId)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+}
+
+export async function addNewspaperComment(comment: Omit<NewspaperComment, 'id' | 'createdAt'>): Promise<NewspaperComment> {
+  const newComment: NewspaperComment = {
+    ...comment,
+    id: `comment-${Date.now()}`,
+    createdAt: new Date().toISOString()
+  };
+
+  if (isFirebaseActive()) {
+    try {
+      await setDoc(doc(db, 'newspaper_comments', newComment.id), newComment);
+      return newComment;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `newspaper_comments/${newComment.id}`);
+    }
+  } else {
+    const list = getLocalData<NewspaperComment>('newspaper_comments', INITIAL_COMMENTS);
+    list.push(newComment);
+    setLocalData('newspaper_comments', list);
+    return newComment;
+  }
+}
+
+export async function deleteNewspaperComment(id: string): Promise<void> {
+  if (isFirebaseActive()) {
+    try {
+      await deleteDoc(doc(db, 'newspaper_comments', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `newspaper_comments/${id}`);
+    }
+  } else {
+    const list = getLocalData<NewspaperComment>('newspaper_comments', INITIAL_COMMENTS);
+    const updated = list.filter((c) => c.id !== id);
+    setLocalData('newspaper_comments', updated);
+  }
+}
+

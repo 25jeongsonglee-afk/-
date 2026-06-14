@@ -2,20 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { User, Newspaper, InterviewReservation, Inquiry, Notice } from './types';
 import { 
   getNewspapers, getReservations, getInquiries, getNotices, 
-  currentSimulatedUser 
+  currentSimulatedUser, deleteNotice
 } from './firebase';
 import AuthModal from './components/AuthModal';
 import Calendar from './components/Calendar';
 import NewspaperView from './components/NewspaperView';
 import InterviewRequest from './components/InterviewRequest';
 import InquiryView from './components/InquiryView';
+import NoticeWriteView from './components/NoticeWriteView';
 import AdminPanel from './components/AdminPanel';
 import meisterLogo from './assets/images/meister_logo_1781278274851.jpg';
 
 import { 
   BookOpen, Calendar as CalendarIcon, MessageSquare, Shield, HelpCircle, 
   Menu, X, ChevronRight, Download, GraduationCap, Users, Camera, Info, 
-  FileText, Award, MapPin, Sparkles, Radio, Newspaper as NewsIcon
+  FileText, Award, MapPin, Sparkles, Radio, Newspaper as NewsIcon, Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -28,7 +29,7 @@ export default function App() {
   
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'home' | 'intro' | 'newspapers' | 'interviews' | 'inquiries' | 'admin'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'intro' | 'newspapers' | 'interviews' | 'inquiries' | 'notices' | 'admin'>('home');
 
   // Load all data on mount
   const loadAllData = async () => {
@@ -61,6 +62,17 @@ export default function App() {
   const handleAuthChange = (user: User | null) => {
     setCurrentUser(user);
     loadAllData();
+  };
+
+  const handleDeleteNotice = async (id: string) => {
+    if (!window.confirm('정말 이 공지사항을 삭제하시겠습니까?')) return;
+    try {
+      await deleteNotice(id);
+      const updated = await getNotices();
+      setNotices(updated);
+    } catch (e) {
+      console.error("공지사항 삭제 실패:", e);
+    }
   };
 
   const handleOpenLogin = () => {
@@ -109,7 +121,8 @@ export default function App() {
                 { id: 'intro', label: '사람책 소개' },
                 { id: 'newspapers', label: '대구일마이스터고 신문' },
                 { id: 'interviews', label: '인터뷰 신청 및 일정' },
-                { id: 'inquiries', label: '문의하기' }
+                { id: 'inquiries', label: '문의하기' },
+                ...(currentUser?.role === 'admin' ? [{ id: 'notices', label: '소식/공지 등록 📢' }] : [])
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -176,7 +189,8 @@ export default function App() {
                   { id: 'intro', label: '사람책 소개' },
                   { id: 'newspapers', label: '대구일마이스터고 신문' },
                   { id: 'interviews', label: '인터뷰 신청 및 일정' },
-                  { id: 'inquiries', label: '문의하기' }
+                  { id: 'inquiries', label: '문의하기' },
+                  ...(currentUser?.role === 'admin' ? [{ id: 'notices', label: '소식/공지 등록 📢' }] : [])
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -373,12 +387,46 @@ export default function App() {
                     {/* Announcement Board Section */}
                     <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
                       <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                        <h4 className="text-xs font-bold text-[#1E3A5F]">📢 공지사항 및 교내 소식</h4>
-                        <span className="text-[9px] font-mono text-slate-400">Total: 0</span>
+                        <h4 className="text-xs font-bold text-[#1E3A5F] flex items-center gap-1">
+                          📢 공지사항 및 교내 소식
+                        </h4>
+                        <span className="text-[10px] bg-indigo-50 text-indigo-700 font-bold px-2 py-0.5 rounded-full">
+                          {notices.length}개
+                        </span>
                       </div>
 
-                      <div className="space-y-3.5 h-40 overflow-y-auto custom-scrollbar">
-                        {/* 빈칸 */}
+                      <div className="space-y-3 h-[240px] overflow-y-auto custom-scrollbar pr-1">
+                        {notices.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center h-full text-slate-400 py-8 text-center space-y-2">
+                            <NewsIcon className="h-7 w-7 text-slate-300 animate-pulse" />
+                            <p className="text-[11px]">등록된 공지사항이나 교내 소식이 없습니다.</p>
+                          </div>
+                        ) : (
+                          notices.map((notice) => (
+                            <div key={notice.id} className="p-3 bg-slate-50 border border-slate-150 rounded-xl space-y-1.5 hover:bg-slate-100/50 transition-colors relative group">
+                              <div className="flex items-start justify-between gap-2">
+                                <h5 className="text-[11.5px] font-bold text-slate-805 leading-snug">{notice.title}</h5>
+                                {(currentUser?.role === 'admin' || currentUser?.role === 'teacher') && (
+                                  <button
+                                    onClick={() => handleDeleteNotice(notice.id)}
+                                    className="text-rose-500 hover:text-rose-700 p-0.5 rounded-md hover:bg-rose-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0 cursor-pointer"
+                                    title="공지 삭제"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                )}
+                              </div>
+                              <p className="text-[10.5px] text-slate-600 leading-relaxed whitespace-pre-wrap">{notice.content}</p>
+                              <div className="text-[9px] text-slate-400 font-mono text-right">
+                                {new Date(notice.createdAt || Date.now()).toLocaleDateString('ko-KR', {
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit'
+                                })}
+                              </div>
+                            </div>
+                          ))
+                        )}
                       </div>
                     </div>
                   </div>
@@ -519,6 +567,22 @@ export default function App() {
                 <InquiryView 
                   currentUser={currentUser} 
                   inquiries={inquiries} 
+                  onRefresh={loadAllData} 
+                />
+              </motion.div>
+            )}
+
+            {/* VIEW E-2: NOTICE WRITE VIEW FOR ADMINS ONLY */}
+            {activeTab === 'notices' && (
+              <motion.div
+                key="notices-screen"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="space-y-6"
+              >
+                <NoticeWriteView 
+                  currentUser={currentUser} 
                   onRefresh={loadAllData} 
                 />
               </motion.div>

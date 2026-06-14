@@ -279,195 +279,39 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
                   </div>
                 )}
 
-                <div className="space-y-4 py-2">
-                  {isFBActive && !useLocalFallback ? (
-                    <div className="space-y-3.5">
-                      <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-left space-y-2">
-                        <label className="block text-[11px] font-bold text-slate-600 flex items-center gap-1">
-                          🗝️ 선택비밀번호 (교직원 구글 로그인 전용)
-                        </label>
-                        <input
-                          type="password"
-                          value={googleTeacherSecret}
-                          onChange={(e) => setGoogleTeacherSecret(e.target.value)}
-                          placeholder="구글 로그인 예정인 선생님이신 경우 기입하세요"
-                          className="w-full text-xs py-2 px-3 bg-white border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/15 focus:border-[#1E3A5F] transition-all font-mono"
-                        />
-                        <p className="text-[10px] text-slate-500 leading-relaxed font-semibold">
-                          💡 비밀번호를 적지 않거나 건너뛰면 기본 <strong>학생 / 독자 권한</strong>으로 로그인됩니다.
-                          <br />
-                          💡 <strong>&apos;meister&apos;</strong>를 적으시면 <strong className="text-orange-600 font-bold">교직원 권한</strong> 및 <strong className="text-orange-600 font-bold">&apos;***선생님&apos;</strong> 호칭으로 자동 변환됩니다.
-                        </p>
-                      </div>
-
-                      <button
-                        onClick={handleGoogleLogin}
-                        disabled={loading}
-                        className="w-full py-4 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-3 shadow-md cursor-pointer disabled:opacity-50 border border-slate-700 font-sans"
-                        id="btn-google-auth"
-                      >
-                        <svg className="w-4.5 h-4.5 shrink-0" viewBox="0 0 24 24" width="100%" height="100%">
-                          <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.47 15.01 0 12 0 7.35 0 3.32 2.67 1.33 6.56l3.86 3C6.12 7.02 8.85 5.04 12 5.04z" />
-                          <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.35H12v4.51h6.48c-.28 1.47-1.11 2.71-2.35 3.55l3.64 2.83c2.13-1.97 3.72-4.87 3.72-8.54z" />
-                          <path fill="#FBBC05" d="M5.19 14.56c-.24-.72-.38-1.5-.38-2.31s.14-1.59.38-2.31L1.33 6.94C.48 8.62 0 10.5 0 12.5s.48 3.88 1.33 5.56l3.86-3z" />
-                          <path fill="#34A853" d="M12 18.96c-3.15 0-5.88-1.98-6.81-4.92l-3.86 3C3.32 21.13 7.35 24 12 24c3.24 0 5.95-1.08 7.93-2.91l-3.64-2.83c-1.11.75-2.52 1.3-4.29 1.3z" />
-                        </svg>
-                        <span>{loading ? '인증 처리하는 중...' : 'Google 계정으로 로그인'}</span>
-                      </button>
-
-                      <div className="text-center pt-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setUseLocalFallback(true);
-                            setErrorMsg('');
-                          }}
-                          className="text-[11px] text-indigo-650 hover:text-indigo-800 hover:underline font-bold bg-indigo-50 border border-indigo-100 py-2 px-4 rounded-xl cursor-pointer w-full transition-all"
-                        >
-                          🔑 구글 로그인이 안 되시나요? (이메일 정보로 우회 로그인)
-                        </button>
-                      </div>
+                <div className="space-y-4 py-2 text-left">
+                  <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                    <div className="space-y-1.5">
+                      <label className="block text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                        🗝️ 선택비밀번호 (교직원 구글 로그인 전용)
+                      </label>
+                      <input
+                        type="password"
+                        value={googleTeacherSecret}
+                        onChange={(e) => setGoogleTeacherSecret(e.target.value)}
+                        placeholder="구글 로그인 예정인 선생님이신 경우 기입하세요"
+                        className="w-full text-xs py-2.5 px-3 bg-white border border-slate-250 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/15 focus:border-[#1E3A5F] transition-all font-mono"
+                      />
                     </div>
-                  ) : (
-                    <form onSubmit={handleCustomLogin} className="space-y-4 text-left">
-                      <div className="bg-[#1E3A5F]/5 border border-[#1E3A5F]/10 p-3 rounded-xl text-[11px] text-[#1E3A5F] leading-relaxed font-semibold">
-                        ℹ️ {isFBActive ? '구글 팝업 인증 오류 시 사용하는 임시 로그인 양식입니다. 본인의 이메일 주소와 실명을 입력해주세요.' : '현재 체험용 빌드 환경입니다. 본인의 이메일을 입력하시고 다음 단계로 이동해주세요.'}
-                      </div>
 
-                      {formStep === 1 ? (
-                        /* Step 1: Email Input Only */
-                        <div className="space-y-4 animate-fade-in">
-                          <div>
-                            <label className="block text-[11px] font-bold text-slate-600 mb-1 flex items-center gap-1">
-                              <Mail className="h-3.5 w-3.5 text-slate-400" />
-                              로그인 이메일 주소
-                            </label>
-                            <input
-                              type="email"
-                              required
-                              value={emailInput}
-                              onChange={(e) => {
-                                setEmailInput(e.target.value);
-                                const val = e.target.value.trim().toLowerCase();
-                                if (val !== '25jeongsonglee@dgmeister.hs.kr') {
-                                  setAdminPasswordInput('');
-                                }
-                              }}
-                              placeholder="본인의 이메일 주소를 입력해 주세요"
-                              className="w-full text-xs py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20 focus:border-[#1E3A5F] transition-all"
-                            />
-                          </div>
-
-                          <button
-                            type="submit"
-                            className="w-full py-3.5 px-4 bg-[#1E3A5F] hover:bg-[#152e4f] text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer border border-[#1E3A5F]/30"
-                          >
-                            <span>다음 단계로 이동 (성함 입력) →</span>
-                          </button>
-                        </div>
-                      ) : (
-                        /* Step 2: Name Input & Optional Secret Password Input */
-                        <div className="space-y-4 animate-fade-in">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFormStep(1);
-                              setErrorMsg('');
-                            }}
-                            className="text-[10px] text-slate-500 hover:text-slate-800 font-bold flex items-center gap-1 mb-2 underline cursor-pointer"
-                          >
-                            ← 이메일 재설정 ({emailInput})
-                          </button>
-
-                          {emailInput.trim().toLowerCase() === '25jeongsonglee@dgmeister.hs.kr' ? (
-                            /* Admin Password Area */
-                            <div className="space-y-3 p-4 bg-emerald-50/40 border border-emerald-100 rounded-xl text-left">
-                              <label className="block text-[11px] font-bold text-emerald-900 mb-1 flex items-center gap-1.5">
-                                🔒 대표관리자 비밀번호 입력
-                              </label>
-                              <input
-                                type="password"
-                                required
-                                value={adminPasswordInput}
-                                onChange={(e) => setAdminPasswordInput(e.target.value)}
-                                placeholder="관리자 비밀번호 입력"
-                                className="w-full text-xs py-2.5 px-3 bg-white border border-emerald-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all font-mono tracking-wide"
-                              />
-                              <p className="text-[10px] text-emerald-800 leading-relaxed font-sans">
-                                💡 대표관리자 계정은 전용 관리자 비밀번호를 정확히 입력하셔야 안전하게 로그인이 활성화됩니다.
-                              </p>
-                            </div>
-                          ) : (
-                            /* Custom User Name & Teacher Secret Input */
-                            <div className="space-y-4">
-                              <div>
-                                <label className="block text-[11px] font-bold text-slate-600 mb-1 flex items-center gap-1">
-                                  <UserIcon className="h-3.5 w-3.5 text-slate-400" />
-                                  본인 성함 (실명)
-                                </label>
-                                <input
-                                  type="text"
-                                  required
-                                  value={nameInput}
-                                  onChange={(e) => setNameInput(e.target.value)}
-                                  placeholder="본인의 실제 성명을 적어주세요"
-                                  className="w-full text-xs py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/20 focus:border-[#1E3A5F] transition-all"
-                                />
-                              </div>
-
-                              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-left space-y-2">
-                                <label className="block text-[11px] font-bold text-slate-600 flex items-center gap-1">
-                                  🗝️ 선택비밀번호 (교직원 전용)
-                                </label>
-                                <input
-                                  type="password"
-                                  value={teacherSecret}
-                                  onChange={(e) => setTeacherSecret(e.target.value)}
-                                  placeholder="선생님이신 경우 여기에 비밀번호를 기입하세요"
-                                  className="w-full text-xs py-2 px-3 bg-white border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/15 focus:border-[#1E3A5F] transition-all font-mono"
-                                />
-                                <p className="text-[10px] text-slate-500 leading-relaxed font-semibold">
-                                  💡 비밀번호를 적지 않거나 건너뛰면 <strong className="text-[#1E3A5F]">일반 학생 권한</strong>으로 로그인됩니다.
-                                  <br />
-                                  💡 <strong>&apos;meister&apos;</strong>를 입력하시는 경우 <strong className="text-orange-600 font-bold">교직원 권한</strong> 및 <strong className="text-orange-600 font-bold">&apos;***선생님&apos;</strong>으로 호칭이 설정됩니다.
-                                </p>
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="flex flex-col gap-2 pt-2">
-                            <button
-                              type="submit"
-                              disabled={loading}
-                              className="w-full py-3.5 px-4 bg-[#1E3A5F] hover:bg-[#152e4f] text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2.5 shadow-md cursor-pointer disabled:opacity-50 border border-[#1E3A5F]/30"
-                            >
-                              <span>{loading ? '인증 연동하는 중...' : '입력 완료 및 이메일 로그인'}</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {isFBActive && (
-                        <div className="flex flex-col gap-2 pt-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setUseLocalFallback(false);
-                              setErrorMsg('');
-                            }}
-                            className="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-[11px] transition-all text-center cursor-pointer border border-slate-200"
-                          >
-                            ← 진짜 Google 로그인 화면으로 돌아가기
-                          </button>
-                        </div>
-                      )}
-                    </form>
-                  )}
+                    <button
+                      onClick={handleGoogleLogin}
+                      disabled={loading}
+                      className="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-3 shadow-md cursor-pointer disabled:opacity-50 border border-slate-700 font-sans"
+                      id="btn-google-auth"
+                    >
+                      <svg className="w-4.5 h-4.5 shrink-0" viewBox="0 0 24 24" width="100%" height="100%">
+                        <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.47 15.01 0 12 0 7.35 0 3.32 2.67 1.33 6.56l3.86 3C6.12 7.02 8.85 5.04 12 5.04z" />
+                        <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.35H12v4.51h6.48c-.28 1.47-1.11 2.71-2.35 3.55l3.64 2.83c2.13-1.97 3.72-4.87 3.72-8.54z" />
+                        <path fill="#FBBC05" d="M5.19 14.56c-.24-.72-.38-1.5-.38-2.31s.14-1.59.38-2.31L1.33 6.94C.48 8.62 0 10.5 0 12.5s.48 3.88 1.33 5.56l3.86-3z" />
+                        <path fill="#34A853" d="M12 18.96c-3.15 0-5.88-1.98-6.81-4.92l-3.86 3C3.32 21.13 7.35 24 12 24c3.24 0 5.95-1.08 7.93-2.91l-3.64-2.83c-1.11.75-2.52 1.3-4.29 1.3z" />
+                      </svg>
+                      <span>{loading ? '인증 처리하는 중...' : 'Google 계정으로 로그인'}</span>
+                    </button>
+                  </div>
 
                   <p className="text-[10.5px] text-center text-slate-500 mt-2 leading-relaxed">
-                    {isFBActive && !useLocalFallback 
-                      ? '✓ 대구일마이스터고 구글 워크스페이스 계정 자동 연동' 
-                      : '✓ 입력하신 본인의 구글 이메일 정보를 통해 본인 아이디로 로그인 처리됩니다.'}
+                    ✓ 대구일마이스터고 구글 워크스페이스 계정 자동 연동
                   </p>
                 </div>
 

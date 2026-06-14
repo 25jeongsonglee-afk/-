@@ -53,3 +53,14 @@ export interface Notice {
   content: string;
   createdAt: string;
 }
+
+export interface NewspaperComment {
+  id: string;
+  newspaperId: string;
+  authorDept: string; // 학과 및 부서
+  authorGrade?: string; // 학년 (선생님일 경우 선택/생략 가능)
+  authorClassNumber: string; // 반-번호
+  authorName: string; // 이름
+  content: string; // 댓글 내용
+  createdAt: string;
+}

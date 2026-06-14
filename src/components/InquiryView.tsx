@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Inquiry, User } from '../types';
 import { addInquiry } from '../firebase';
-import { Mail, Send, HelpCircle, PhoneCall, Check, MessageSquare, AlertCircle } from 'lucide-react';
+import { Mail, Send, Check } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface InquiryViewProps {
@@ -11,6 +11,7 @@ interface InquiryViewProps {
 }
 
 export default function InquiryView({ currentUser, inquiries, onRefresh }: InquiryViewProps) {
+  // States for Inquiries
   const [name, setName] = useState(currentUser?.name || '');
   const [contact, setContact] = useState(currentUser?.email || '');
   const [category, setCategory] = useState<'website' | 'newspaper'>('website');
@@ -45,8 +46,8 @@ export default function InquiryView({ currentUser, inquiries, onRefresh }: Inqui
   };
 
   return (
-    <div id="inquiries-section" className="max-w-4xl mx-auto w-full">
-      {/* Inquiry Form */}
+    <div id="inquiries-section" className="max-w-3xl mx-auto w-full">
+      {/* COLUMN 1: Inquiry Form */}
       <div className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 shadow-xl">
         {isSent ? (
           <motion.div
