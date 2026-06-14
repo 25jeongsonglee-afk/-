@@ -1,14 +1,42 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="google-site-verification" content="googlec25894882109dde6" />
-    <title>My Google AI Studio App</title>
+    
+    <!-- PWA Primary Tags -->
+    <title>월간 사람책 - 대구일마이스터고 사람책 신문</title>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1E3A5F" />
+    
+    <!-- iOS / Safari App Settings (Home Screen addition) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="월간 사람책" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    
+    <!-- Custom Favicon fallback -->
+    <link rel="icon" type="image/png" href="/icons/icon-192.png" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Service Worker Activation -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js")
+            .then((registration) => {
+              console.log("[PWA Status] ServiceWorker activated successfully with scope:", registration.scope);
+            })
+            .catch((error) => {
+              console.error("[PWA Status] ServiceWorker activation failed:", error);
+            });
+        });
+      }
+    </script>
   </body>
 </html>
 

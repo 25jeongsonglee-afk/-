@@ -34,6 +34,53 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'home' | 'intro' | 'newspapers' | 'interviews' | 'inquiries' | 'notices' | 'admin'>('home');
   const [selectedPaperId, setSelectedPaperId] = useState<string | null>(null);
 
+  // PWA (Progressive Web App) Installation States & Trigger Hooks
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      // Prevent standard browser direct minibar banner
+      e.preventDefault();
+      // Store the event so it can be manually called
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setIsInstallable(false);
+      setIsInstalled(true);
+      console.log("월간 사람책 PWA 앱이 정상적으로 설치되었습니다.");
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    // Check on launch if the app already runs inside standalone (iOS / Android Home Screen)
+    if (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true
+    ) {
+      setIsInstalled(true);
+    }
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User install request choice outcome: ${outcome}`);
+    setDeferredPrompt(null);
+    setIsInstallable(false);
+  };
+
   // Load all data on mount
   const loadAllData = async () => {
     try {
@@ -150,13 +197,35 @@ export default function App() {
               )}
             </nav>
 
-            {/* Account Controls */}
+            {/* Account Controls & PWA Install */}
             <div className="hidden sm:flex items-center gap-3">
+              {isInstallable && (
+                <button
+                  type="button"
+                  onClick={handleInstallApp}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer border border-amber-500 animate-pulse"
+                  title="월간 사람책 정식 앱으로 설치"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>앱 설치하기</span>
+                </button>
+              )}
               <AuthModal onAuthChange={handleAuthChange} currentUser={currentUser} />
             </div>
 
             {/* Mobile Nav Trigger */}
             <div className="flex items-center gap-2 lg:hidden">
+              {isInstallable && (
+                <button
+                  type="button"
+                  onClick={handleInstallApp}
+                  className="flex items-center gap-1 p-1.5 bg-amber-400 hover:bg-amber-500 text-slate-900 rounded-lg text-[10px] font-bold shadow-xs transition-all"
+                  title="월간 사람책 앱 설치"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  <span>설치</span>
+                </button>
+              )}
               <div className="sm:hidden">
                 <AuthModal onAuthChange={handleAuthChange} currentUser={currentUser} />
               </div>
@@ -208,6 +277,17 @@ export default function App() {
                     }`}
                   >
                     💡 [관리자] 시스템 예약/문의 통합관리
+                  </button>
+                )}
+
+                {isInstallable && (
+                  <button
+                    type="button"
+                    onClick={() => { handleInstallApp(); setMobileMenuOpen(false); }}
+                    className="block w-full text-left text-xs font-extrabold px-4 py-3 bg-amber-400 hover:bg-amber-500 text-slate-900 rounded-lg shadow-xs flex items-center justify-between border border-amber-500 cursor-pointer transition-all animate-pulse"
+                  >
+                    <span>✨ 홈 화면에 "월간 사람책" 앱 추가하기</span>
+                    <Sparkles className="h-4 w-4" />
                   </button>
                 )}
               </div>
@@ -310,6 +390,50 @@ export default function App() {
                       </div>
                     </div>
                   ))}
+                </section>
+
+                {/* PWA INSTALLATION CORNER ACTION BOARD */}
+                <section className="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-white relative overflow-hidden shadow-xl">
+                  <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+                  <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 bg-[#1E3A5F]/40 rounded-full blur-2xl pointer-events-none" />
+
+                  <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="space-y-2">
+                      <div className="inline-flex items-center gap-1.5 px-2 bg-amber-500/15 text-amber-400 text-[10px] font-bold py-0.5 rounded-full border border-amber-500/30">
+                        <Sparkles className="h-3 w-3" />
+                        <span>Progressive Web App (PWA) 지원</span>
+                      </div>
+                      <h3 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                        <span>📱 "월간 사람책" 전용 모바일 앱으로 더 편리하게!</span>
+                      </h3>
+                      <p className="text-xs text-slate-400 leading-relaxed max-w-2xl">
+                        브라우저 주소창이나 군더더기 없이 전체화면으로 볼 수 있으며, 홈 화면 아이콘을 통해 원본 신문지면 크게 보기 및 최신 교내 지향 아카이브를 네이티브처럼 원활하게 이용할 수 있습니다.
+                      </p>
+                    </div>
+
+                    <div className="flex border-t border-slate-800 md:border-t-0 pt-4 md:pt-0 shrink-0 flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                      {isInstallable ? (
+                        <button
+                          onClick={handleInstallApp}
+                          className="px-5 py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 animate-bounce hover:scale-105"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          <span>1초 만에 앱 설치하기</span>
+                        </button>
+                      ) : (
+                        <div className="text-slate-400 text-xs font-semibold bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800 flex flex-col gap-1.5 max-w-md">
+                          <span className="text-white text-[11px] font-bold flex items-center gap-1">
+                            <Info className="h-3.5 w-3.5 text-amber-400" />
+                            <span>디바이스별 간편 홈 화면 설치법</span>
+                          </span>
+                          <span className="text-[10.5px] text-slate-400 font-medium space-y-1 block">
+                            <span>• <strong>Android (Chrome)</strong>: 브라우저 상단 메뉴 버튼 ➡ <strong>[앱 설치]</strong> 또는 <strong>[홈 화면에 추가]</strong></span>
+                            <span className="block">• <strong>iPhone (Safari)</strong>: 하단 중간 <strong>[공유]</strong> 버튼 ➡ 스크롤 내린 뒤 <strong>[홈 화면에 추가]</strong> 터치</span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </section>
 
                 {/* PRIMARY RECENT SECTIONS GRID */}

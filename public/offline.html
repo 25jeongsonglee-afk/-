@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오프라인 모드 - 월간 사람책</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #0f172a;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+    }
+    .container {
+      max-width: 480px;
+      padding: 32px;
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    }
+    .icon {
+      font-size: 64px;
+      margin-bottom: 24px;
+      color: #d9a441;
+      animation: pulse 2s infinite ease-in-out;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #f8fafc;
+      margin-top: 5px;
+      margin-bottom: 12px;
+    }
+    p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #94a3b8;
+      margin-bottom: 24px;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background-color: #1e3a5f;
+      color: #ffffff;
+      border: 1px solid #d9a441;
+      border-radius: 12px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn:hover {
+      background-color: #d9a441;
+      color: #0f172a;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.8; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">📖</div>
+    <h1>네트워크 연결 없음</h1>
+    <p>현재 인터넷 연결이 일시적으로 중단되었습니다.<br>월간 사람책 플랫폼은 오프라인에서도 이전에 받아둔 지면과 주요 화면 정보를 탐색하실 수 있습니다.</p>
+    <button class="btn" onclick="window.location.reload()">다시 연결하기</button>
+  </div>
+</body>
+</html>
