@@ -42,6 +42,7 @@ export default function App() {
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [isInIframe, setIsInIframe] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [highlightSteps, setHighlightSteps] = useState(false);
 
   useEffect(() => {
     setIsInIframe(window.self !== window.top);
@@ -89,76 +90,9 @@ export default function App() {
     } else {
       // If there's no deferredPrompt (such as iOS Safari or nested app browser or inside iframe), always prompt our custom visual install dialog
       setShowInstallModal(true);
+      setHighlightSteps(true);
+      setTimeout(() => setHighlightSteps(false), 3000);
     }
-  };
-
-  const handleDownloadApp = () => {
-    const htmlContent = `<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>월간 사람책 대구일마이스터고 앱 실행기</title>
-  <style>
-    body {
-      margin: 0; padding: 0;
-      background-color: #0f172a;
-      color: #cbd5e1;
-      font-family: system-ui, -apple-system, sans-serif;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      min-height: 100vh; text-align: center;
-    }
-    .card {
-      max-width: 400px; width: 85%; padding: 32px; background: #1e293b; border: 1px solid #334155; border-radius: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
-    }
-    .logo {
-      width: 96px; height: 96px; border-radius: 24px; margin-bottom: 24px; background: white; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
-      display: inline-flex; align-items: center; justify-content: center; margin-left: auto; margin-right: auto;
-    }
-    h1 { font-size: 22px; font-weight: 800; color: #fff; margin: 0 0 8px 0; }
-    p { font-size: 13px; color: #94a3b8; line-height: 1.6; margin: 0 0 24px 0; }
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; box-sizing: border-box;
-      padding: 14px 28px; background: #FBBF24; color: #020617; font-weight: 800; font-size: 14px;
-      text-decoration: none; border-radius: 14px; transition: all 0.2s;
-    }
-    .btn:hover { background: #F59E0B; transform: scale(1.02); }
-  </style>
-  <script>
-    // Automating redirect
-    setTimeout(() => {
-      window.location.href = "${window.location.origin}";
-    }, 1500);
-  </script>
-</head>
-<body>
-  <div class="card">
-    <div class="logo">
-      <svg width="60" height="60" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <rect width="100" height="100" rx="20" fill="#1E3A5F"/>
-        <path d="M25,35 Q50,25 75,35 V75 Q50,65 25,75 Z" fill="none" stroke="#FBBF24" stroke-width="6" stroke-linecap="round"/>
-        <path d="M50,30 V70" stroke="#FBBF24" stroke-width="4"/>
-        <circle cx="50" cy="50" r="4" fill="#FBBF24"/>
-      </svg>
-    </div>
-    <h1>월간 사람책</h1>
-    <p>대구일마이스터고 사람책 신문 플랫폼<br>전용 모바일/PC 로컬 실행기를 기동하고 있습니다...</p>
-    <a href="${window.location.origin}" class="btn">
-      <span>지금 수동 입장하기 ➡</span>
-    </a>
-  </div>
-</body>
-</html>`;
-
-    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "월간_사람책_바로가기_앱.html";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   };
 
   const handleCopyUrl = () => {
@@ -231,17 +165,17 @@ export default function App() {
             {/* Logo / Brand Details */}
             <div 
               onClick={() => setActiveTab('home')} 
-              className="flex items-center gap-3 cursor-pointer group shrink-0"
+              className="flex items-center gap-2 sm:gap-3 cursor-pointer group shrink-0"
             >
-              <div className="h-16 w-16 bg-white rounded-2xl p-1 flex items-center justify-center border border-slate-200 shadow-sm group-hover:scale-105 transition-all">
+              <div className="h-11 w-11 sm:h-14 sm:w-14 bg-white rounded-xl sm:rounded-2xl p-1 flex items-center justify-center border border-slate-200 shadow-sm group-hover:scale-105 transition-all">
                 <MeisterLogo className="h-full w-full" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-serif font-bold text-lg tracking-tight text-[#1E3A5F]">월간 사람책</span>
-                  <span className="text-[10px] bg-[#D9A441]/10 text-[#D9A441] border border-[#D9A441]/30 font-bold px-1.5 py-0.5 rounded">마이스터고</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-serif font-bold text-sm sm:text-base md:text-lg tracking-tight text-[#1E3A5F]">월간 사람책</span>
+                  <span className="hidden sm:inline-flex text-[9px] sm:text-[10px] bg-[#D9A441]/10 text-[#D9A441] border border-[#D9A441]/30 font-bold px-1.5 py-0.5 rounded">마이스터고</span>
                 </div>
-                <span className="text-[10px] text-slate-400 block font-semibold">대구일마이스터고등학교 신문</span>
+                <span className="text-[9px] sm:text-[10px] text-slate-400 block font-semibold hidden sm:block">대구일마이스터고등학교 신문</span>
               </div>
             </div>
 
@@ -298,7 +232,7 @@ export default function App() {
                 </button>
               )}
               {isInstalled && (
-                <span className="flex items-center gap-1 px-3 py-1.5 bg-emerald-550/10 text-emerald-700 border border-emerald-500/20 font-bold text-[10.5px] rounded-xl select-none">
+                <span className="flex items-center gap-1 px-3 py-1.5 bg-emerald-555/10 text-emerald-700 border border-emerald-500/20 font-bold text-[10.5px] rounded-xl select-none">
                   <span>앱 모드로 실행 중</span>
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping inline-block" />
                 </span>
@@ -307,26 +241,15 @@ export default function App() {
             </div>
 
             {/* Mobile Nav Trigger */}
-            <div className="flex items-center gap-2 lg:hidden">
-              {!isInstalled && (
-                <button
-                  type="button"
-                  onClick={handleInstallApp}
-                  className="flex items-center gap-1 p-1.5 bg-amber-400 hover:bg-amber-500 text-slate-900 rounded-lg text-[10px] font-bold shadow-xs transition-all animate-pulse"
-                  title="월간 사람책 앱 설치"
-                >
-                  <Sparkles className="h-3 w-3" />
-                  <span>설치</span>
-                </button>
-              )}
+            <div className="flex items-center gap-2 lg:hidden mr-1">
               <div className="sm:hidden">
                 <AuthModal onAuthChange={handleAuthChange} currentUser={currentUser} />
               </div>
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 text-slate-600 hover:text-slate-900 focus:outline-none cursor-pointer"
+                className="p-2 text-slate-600 hover:text-slate-900 bg-slate-50 border border-slate-200/60 hover:bg-slate-100 rounded-xl focus:outline-none cursor-pointer transition-all"
               >
-                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                {mobileMenuOpen ? <X className="h-5.5 w-5.5" /> : <Menu className="h-5.5 w-5.5" />}
               </button>
             </div>
 
@@ -508,7 +431,7 @@ export default function App() {
                       {!isInstalled ? (
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                           <button
-                            onClick={handleDownloadApp}
+                            onClick={handleInstallApp}
                             className="px-6 py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 animate-bounce hover:scale-105"
                           >
                             <Download className="h-4 w-4 text-slate-950 animate-bounce" />
@@ -903,7 +826,7 @@ export default function App() {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-200 overflow-hidden relative z-10 flex flex-col max-h-[90vh]"
+              className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl border border-slate-200 overflow-hidden relative z-10 flex flex-col max-h-[90vh]"
             >
               <div className="bg-[#1E3A5F] text-white p-6 relative overflow-hidden shrink-0">
                 <div className="absolute top-0 right-0 -mr-10 -mt-10 w-32 h-32 bg-amber-400/10 rounded-full blur-xl" />
@@ -925,18 +848,18 @@ export default function App() {
                     />
                   </span>
                   <div>
-                    <div className="inline-flex items-center gap-1.5 bg-amber-400 text-slate-1000 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-xs uppercase">
+                    <div className="inline-flex items-center gap-1.5 bg-amber-400 text-[#1E3A5F] text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-xs uppercase font-sans">
                       <span>✨ 전용 앱 아이콘 탑재 완료</span>
                     </div>
                     <h3 className="text-base font-black text-white tracking-tight mt-1 flex items-center gap-1.5 font-sans">
-                      <span>📱 "월간 사람책" 전용 앱 설치 안내</span>
+                      <span>📱 "월간 사람책" 스마트폰 홈 화면 추가 가이드</span>
                     </h3>
                   </div>
                 </div>
               </div>
 
               {/* Steps & Tab Content */}
-              <div className="p-6 overflow-y-auto space-y-6 flex-1 text-slate-700">
+              <div className="p-6 overflow-y-auto space-y-6 flex-1 text-slate-700 font-sans">
                 {/* ICON PREVIEW HERO MINI-CARD */}
                 <div className="bg-gradient-to-br from-[#1E3A5F]/5 to-[#1E3A5F]/10 border border-[#1E3A5F]/10 rounded-2xl p-4.5 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
                   <div className="relative shrink-0">
@@ -951,185 +874,167 @@ export default function App() {
                   <div className="space-y-1">
                     <h4 className="text-xs font-black text-[#1E3A5F]">새로 적용된 우아한 골든북 테마 아이콘</h4>
                     <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
-                      설치 시 기본 크롬/브라우저 로고 대신 기기에 고급스러운 딥블루 마이스터 골드 테마 북 디자인의 고유 앱 단축 아이콘이 생성됩니다!
+                      설치 시 기본 크롬/브라우저 로고 대신 기기에 고급스러운 딥블루 마이스터 골든북 테마 디자인의 전용 앱 아이콘이 생성됩니다!
                     </p>
                   </div>
                 </div>
+
                 {/* DYNAMIC PWA INTUITIVE STATUS ROW */}
                 {isInIframe ? (
-                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4.5 space-y-3 shadow-xs">
+                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 space-y-4 shadow-xs">
                     <div className="flex items-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                      <span className="font-extrabold text-xs text-amber-800">현재 개발용 프리뷰 모드로 시청 중</span>
+                      <span className="font-extrabold text-xs text-amber-800">개발자 프리뷰 모드(세이프티 가드) 시청 중</span>
                     </div>
-                    <p className="text-[11px] text-slate-650 leading-relaxed font-semibold">
-                      구글 AI 스튜디오의 프리뷰(아이프레임 프레임) 내부에서는 브라우저 보안 규정상 <strong>1초 간편 자동 설치</strong>가 제공되지 못합니다.
-                      <br />아래 단추를 눌러 <strong>전용 로컬 앱 실행기</strong>를 즉시 받으시거나, 새 창을 열어서 실행해 주세요. (가입은 필요 없습니다.)
+                    <p className="text-[11.5px] text-slate-700 leading-relaxed font-semibold">
+                      구글 AI 스튜디오 프리뷰 프레임 내부에서는 모바일 시스템 내장 앱 추가(PWA)가 불가능하도록 브라우저 보안 규정상 제한되어 있습니다.<br />
+                      원스톱 자동 설치 및 최상의 읽기 환경을 위해 아래 <strong>[새 창에서 열기]</strong> 버튼을 누르신 후, 모바일 브라우저 환경에서 홈 화면에 추가하시면 아주 간편하게 이용하실 수 있습니다!
                     </p>
 
-                    <div className="flex flex-col gap-2 pt-1 font-sans">
-                      <button
-                        type="button"
-                        onClick={handleDownloadApp}
-                        className="w-full py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <Download className="h-4 w-4 text-slate-950 animate-bounce" />
-                        <span>📥 1초 만에 앱 바로가기 파일 다운로드 받기</span>
-                      </button>
-
-                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-2">
-                        <input
-                          type="text"
-                          readOnly
-                          value={window.location.origin}
-                          className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-[10px] text-slate-600 outline-none w-full font-mono font-bold shadow-inner"
-                        />
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            onClick={handleCopyUrl}
-                            className="px-3.5 py-2 bg-[#1E3A5F] hover:bg-[#152943] text-white text-[10.5px] font-bold rounded-xl transition-all shrink-0 flex items-center justify-center gap-1 cursor-pointer shadow-xs"
-                          >
-                            {copied ? (
-                              <>
-                                <Check className="h-3.5 w-3.5 text-emerald-400" />
-                                <span>복사완료</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="h-3.5 w-3.5" />
-                                <span>주소 복사</span>
-                              </>
-                            )}
-                          </button>
-                          <a
-                            href={window.location.origin}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-3.5 py-2 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[10.5px] font-bold rounded-xl transition-all shrink-0 flex items-center justify-center gap-1 text-center shadow-xs"
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                            <span>새 창 열기</span>
-                          </a>
-                        </div>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+                      <input
+                        type="text"
+                        readOnly
+                        value={window.location.origin}
+                        className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-[10px] text-slate-600 outline-none w-full font-mono font-bold shadow-inner"
+                      />
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={handleCopyUrl}
+                          className="px-3.5 py-2.5 bg-[#1E3A5F] hover:bg-[#152943] text-white text-[11px] font-bold rounded-xl transition-all shrink-0 flex items-center justify-center gap-1 cursor-pointer shadow-xs"
+                        >
+                          {copied ? (
+                            <>
+                              <Check className="h-3.5 w-3.5 text-emerald-400" />
+                              <span>복사완료</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3.5 w-3.5" />
+                              <span>주소 복사</span>
+                            </>
+                          )}
+                        </button>
+                        <a
+                          href={window.location.origin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-[11px] rounded-xl transition-all shrink-0 flex items-center justify-center gap-1 text-center shadow-xs"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5 text-slate-950" />
+                          <span>새 창에서 열기</span>
+                        </a>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-indigo-50/70 border border-[#1E3A5F]/15 rounded-2xl p-4.5 text-center space-y-3 shadow-xs font-sans">
+                  <div className="bg-indigo-50/70 border border-[#1E3A5F]/15 rounded-2xl p-5 text-center space-y-4 shadow-xs">
                     <div className="flex items-center justify-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-                      <span className="font-extrabold text-[#1E3A5F] text-xs">초고속 원클릭 안전 다운로드</span>
+                      <span className="font-extrabold text-[#1E3A5F] text-xs">🚀 1초 만에 스마트폰 홈 화면에 추가하기</span>
                     </div>
-                    <p className="text-[11px] text-slate-650 leading-relaxed font-semibold max-w-sm mx-auto">
-                      아래 설치 파일 다운로드 단추를 누르면, 바탕화면이나 홈 화면 어디서든 더블클릭으로 바로 접근 가능한 <strong>초경량 로컬 실행기 파일</strong>이 다운로드됩니다!
+                    <p className="text-[12.4px] text-slate-700 leading-relaxed font-bold max-w-xl mx-auto">
+                      따로 앱스토어 설치나 번거로운 가입 없이, 브라우저의 기본 PWA 기능을 통해 스마트폰 홈 화면에 아이콘을 바로 생성할 수 있습니다.<br />
+                      바탕화면에 설치된 '월간 사람책' 전용 아이콘을 터치하시면 브라우저 상하단 주소창이 사라진 시원한 전체 화면으로 신문을 읽으실 수 있습니다!
                     </p>
 
-                    <div className="flex flex-col gap-2.5">
-                      <button
-                        type="button"
-                        onClick={handleDownloadApp}
-                        className="w-full py-4 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-sm rounded-xl shadow-md transition-all shrink-0 flex items-center justify-center gap-2 animate-bounce hover:scale-[1.01] cursor-pointer"
-                      >
-                        <Download className="h-5 w-5 text-slate-950 animate-bounce" />
-                        <span>📥 1초 만에 앱 바로가기 파일 다운로드 (추천)</span>
-                      </button>
-
+                    <div className="flex flex-col gap-2.5 max-w-sm mx-auto">
                       {isInstallable || deferredPrompt ? (
                         <button
                           type="button"
                           onClick={handleInstallApp}
-                          className="w-full py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs rounded-xl transition-all shrink-0 flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                          className="w-full py-4 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all shrink-0 flex items-center justify-center gap-2 cursor-pointer duration-200"
                         >
-                          <Sparkles className="h-4 w-4 text-[#1E3A5F]" />
-                          <span>✨ 브라우저 내장 앱 연동 시스템 실행</span>
+                          <Sparkles className="h-4 w-4 text-slate-950 animate-pulse" />
+                          <span>✨ 원클릭 스마트폰 홈 화면에 즉시 설치하기</span>
                         </button>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (deferredPrompt) {
-                              handleInstallApp();
-                            } else {
-                              alert("현재 기기 맞춤형 인터페이스를 초기화하는 중입니다. 앱이 활성화되지 않는 경우 최상단 노란색 [앱 바로가기 파일 다운로드]를 통해 기기에 설치해 주시면 감사하겠습니다!");
-                            }
-                          }}
-                          className="w-full py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-[11px] rounded-xl transition-all shrink-0 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-                        >
-                          <span>⚙️ 브라우저 내장 앱 수동 강제 기동</span>
-                        </button>
+                        <div className="space-y-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setHighlightSteps(true);
+                              setTimeout(() => setHighlightSteps(false), 3500);
+                            }}
+                            className="w-full py-4 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all shrink-0 flex items-center justify-center gap-2 cursor-pointer duration-200 animate-pulse"
+                          >
+                            <Sparkles className="h-4 w-4 text-slate-950" />
+                            <span>✨ 모바일 브라우저 전용 빠른 설치 (1초 완성)</span>
+                          </button>
+                          <p className="text-[11px] text-amber-600 font-extrabold animate-pulse leading-relaxed">
+                            ⚠️ 아래의 [기기별 초간단 설치법] 카드가 노랗게 반짝이고 있습니다!<br />반짝이는 순서를 따라 터치 몇 번에 1초 만에 스마트폰에 바로 전용 앱 아이콘을 생성해보세요!
+                          </p>
+                        </div>
                       )}
                     </div>
                   </div>
                 )}
 
-                <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">
-                  기기별 설치 안내 가이드
-                </h4>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                   {/* Android / Chrome Panel */}
-                  <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4.5 space-y-3 flex flex-col justify-between">
+                  <div className={`bg-slate-50 border rounded-2xl p-4.5 space-y-3 flex flex-col justify-between transition-all duration-500 ${highlightSteps ? 'border-amber-400 ring-4 ring-amber-400/30 shadow-xl scale-[1.03] bg-amber-50/20' : 'border-slate-150'}`}>
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-xl">🤖</span>
                         <span className="font-extrabold text-xs text-slate-800">삼성 / 안드로이드 (크롬)</span>
                       </div>
-                      <p className="text-[10.5px] text-slate-500 mt-2 leading-relaxed">
+                      <p className="text-[10.5px] text-slate-500 mt-2 leading-relaxed font-semibold">
                         구글 크롬, 웨일, 네이버 등의 브라우저에서 편리하게 자동 설치가 지원됩니다.
                       </p>
                       
-                      <ol className="text-[11px] text-slate-650 space-y-2 mt-4 list-decimal pl-4.5 font-medium">
+                      <ol className="text-[11px] text-slate-650 space-y-2 mt-4 list-decimal pl-5 font-semibold leading-relaxed">
                         <li>
-                          브라우저 주소창 우측의 <strong>더보기 (⋮) 오버플로우 버튼</strong>을 터치합니다.
+                          브라우저 주소창 우측의 더보기 (⋮) 오버플로우 버튼을 터치합니다.
                         </li>
                         <li>
-                          메뉴 목록 중 <strong>'앱 설치'</strong> 또는 <strong>'홈 화면에 추가'</strong>를 누릅니다.
+                          메뉴 목록 중 '앱 설치' 또는 '홈 화면에 추가'를 누릅니다.
                         </li>
                         <li>
-                          설치 팝업이 나타나면 <strong>'설치'</strong>를 최종 선택해주세요.
+                          설치 팝업이 나타나면 '설치'를 최종 선택해주세요.
                         </li>
                       </ol>
                     </div>
 
                     <div className="p-2.5 bg-[#FAFBCF]/30 border border-amber-300/40 rounded-xl mt-3">
-                      <p className="text-[10px] text-slate-555 leading-relaxed font-semibold">
-                        💡 설치 후 휴대폰 바탕화면에 생성되는 <strong>"월간 사람책" 아이콘</strong>을 누르면 곧바로 네이티브 앱처럼 실행됩니다.
+                      <p className="text-[10px] text-slate-600 leading-relaxed font-semibold">
+                        💡 설치 후 휴대폰 바탕화면에 생성되는 "월간 사람책" 아이콘을 누르면 곧바로 네이티브 앱처럼 실행됩니다.
                       </p>
                     </div>
                   </div>
 
                   {/* iOS / iPhone Panel */}
-                  <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4.5 space-y-3 flex flex-col justify-between">
+                  <div className={`bg-slate-50 border rounded-2xl p-4.5 space-y-3 flex flex-col justify-between transition-all duration-500 ${highlightSteps ? 'border-amber-400 ring-4 ring-amber-400/30 shadow-xl scale-[1.03] bg-amber-50/20' : 'border-slate-150'}`}>
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-xl">🍎</span>
-                        <span className="font-extrabold text-xs text-slate-800">아이폰 / iOS (사파리)</span>
+                        <span className="font-extrabold text-xs text-[#1E3A5F]">아이폰 / iOS (사파리)</span>
                       </div>
-                      <p className="text-[10.5px] text-slate-500 mt-2 leading-relaxed">
+                      <p className="text-[10.5px] text-slate-500 mt-2 leading-relaxed font-semibold">
                         애플 정책에 따라 Safari 브라우저에서 아주 간편하게 추가 가능합니다.
                       </p>
 
-                      <ol className="text-[11px] text-slate-650 space-y-2 mt-4 list-decimal pl-4.5 font-medium">
+                      <ol className="text-[11px] text-slate-650 space-y-2 mt-4 list-decimal pl-5 font-semibold leading-relaxed">
                         <li>
-                          아이폰 화면 하단 툴바의 <strong>공유 버튼 (📤 네모 위 화살표 아이콘)</strong>을 터치합니다.
+                          아이폰 화면 하단 툴바의 공유 버튼 (📤 네모 위 화살표 아이콘)을 터치합니다.
                         </li>
                         <li>
-                          스마트 제어창 아래로 스크롤하여 <strong>'홈 화면에 추가'</strong> 항목을 선택합니다.
+                          스마트 제어창 아래로 스크롤하여 '홈 화면에 추가' 항목을 선택합니다.
                         </li>
                         <li>
-                          우측 상단의 <strong>'추가'</strong> 버튼을 눌러 확정하면 완료됩니다!
+                          우측 상단의 '추가' 버튼을 눌러 확정하면 완료됩니다!
                         </li>
                       </ol>
                     </div>
 
                     <div className="p-2.5 bg-[#D9A441]/10 border border-[#D9A441]/15 rounded-xl mt-3">
-                      <p className="text-[10px] text-amber-805 leading-relaxed font-semibold">
+                      <p className="text-[10px] text-amber-800 leading-relaxed font-semibold">
                         📌 주소 표시줄이나 방해 요소가 사라져 오직 꽉 찬 전체화면으로 원활히 지면 신문을 감상할 수 있습니다.
                       </p>
                     </div>
                   </div>
                 </div>
+
               </div>
 
               {/* Bottom control */}

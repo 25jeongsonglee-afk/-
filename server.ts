@@ -113,6 +113,23 @@ async function startServer() {
     }
   });
 
+  // API Route: Download Desktop Shortcut (.url file) with active custom icon binding
+  app.get("/api/download-shortcut", (req, res) => {
+    const protocol = req.secure || req.headers["x-forwarded-proto"] === "https" ? "https" : "http";
+    const host = req.headers["x-forwarded-host"] || req.headers.host;
+    const origin = `${protocol}://${host}`;
+
+    // Standard Windows Internet Shortcut (.url) INI format 
+    const urlContent = `[InternetShortcut]\r\nURL=${origin}\r\nIDList=\r\nIconIndex=0\r\nIconFile=${origin}/favicon.ico\r\n`;
+
+    const filename = "월간_사람책_바로가기.url";
+    const encodedFilename = encodeURIComponent(filename);
+    
+    res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodedFilename}`);
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.send(urlContent);
+  });
+
   // API Route: check configurations
   app.get("/api/config-status", (req, res) => {
     res.json({

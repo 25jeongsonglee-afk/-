@@ -47,7 +47,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
   const [zoomedPaper, setZoomedPaper] = useState<Newspaper | null>(null);
   const [zoomScale, setZoomScale] = useState(1);
   const [rotation, setRotation] = useState(0);
-  const [showZoomSidebar, setShowZoomSidebar] = useState(true);
+  const [showZoomSidebar, setShowZoomSidebar] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
 
    useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -69,6 +69,9 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
         setZoomedPaper(found);
         setZoomScale(1);
         setRotation(0);
+        if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+          setShowZoomSidebar(false);
+        }
       }
       if (onClearInitialId) {
         onClearInitialId();
@@ -82,6 +85,11 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
     setZoomScale(1);
     setRotation(0);
     loadComments(paper.id);
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setShowZoomSidebar(false);
+    } else {
+      setShowZoomSidebar(true);
+    }
   };
 
   const loadComments = async (paperId: string) => {
@@ -277,7 +285,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
     <div id="newspapers-archive" className="space-y-6">
       {/* Top Banner Control Header */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50 p-4 border border-slate-200 rounded-2xl">
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
           <div className="relative w-full md:w-80">
             <Search className="absolute left-3 top-2.5 h-4.5 w-4.5 text-slate-400" />
             <input
@@ -292,7 +300,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-            className="text-xs bg-white border border-slate-200 py-2.5 px-3 rounded-xl focus:outline-none focus:border-[#1E3A5F] cursor-pointer"
+            className="text-xs bg-white border border-slate-200 py-2.5 px-3 rounded-xl focus:outline-none focus:border-[#1E3A5F] cursor-pointer w-full sm:w-auto text-center"
           >
             <option value="all">전체 연도</option>
             {yearsList.map(y => (
@@ -888,7 +896,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
                               )}
                             </div>
 
-                            <p className="text-[11px] text-slate-705 whitespace-pre-wrap leading-relaxed pr-6 font-medium">
+                            <p className="text-[11px] text-slate-700 whitespace-pre-wrap leading-relaxed pr-6 font-medium">
                               {comment.content}
                             </p>
 
@@ -912,7 +920,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
               </div>
 
               {/* Modal Footer */}
-              <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+              <div className="bg-slate-50 px-6 py-4 border-t border-slate-100 flex items-center justify-between shrink-0">
                 <span className="text-[10px] font-mono text-slate-400">
                   실시간 피드백 동기화 완료
                 </span>
@@ -933,140 +941,151 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
           NEWSPAPER IMAGE ZOOM / LIGHTBOX OVERLAY
           ────────────────────────────────────────────────────────── */}
       <AnimatePresence>
-        {zoomedPaper && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[60] flex flex-col p-4 select-none"
-          >
-            {/* Lightbox Header Controls */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 text-white border-b border-slate-850 pb-4 mb-4 select-text">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-[#D9A441]/10 text-[#D9A441] rounded-lg">
-                  <BookOpen className="h-5 w-5" />
+        {zoomedPaper && (() => {
+          const isMobileSize = typeof window !== 'undefined' ? window.innerWidth < 1024 : false;
+          const baseHeight = isMobileSize ? 58 : 78;
+          return (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[60] flex flex-col p-3 sm:p-4 select-none"
+            >
+              {/* Lightbox Header Controls */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 sm:gap-3 text-white border-b border-slate-850 pb-3 mb-3 select-text shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 sm:p-2 bg-[#D9A441]/10 text-[#D9A441] rounded-lg shrink-0">
+                    <BookOpen className="h-4 sm:h-5 w-4 sm:w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-bold tracking-tight text-white">{zoomedPaper.title}</h3>
+                    <p className="text-[9px] sm:text-[10px] text-slate-400 font-mono mt-0.5">
+                      {zoomedPaper.year}년 {zoomedPaper.month}월호 • <span className="hidden sm:inline">화면 조절기를 사용하거나 슬라이딩 스크롤하여 확대 기사를 읽으십시오.</span><span className="sm:hidden">화면 조절후 확대지면 스크롤</span>
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold tracking-tight">🔍 {zoomedPaper.title} 원본 지면 보기</h3>
-                  <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                    {zoomedPaper.year}년 {zoomedPaper.month}월호 • 마우스 휠, 드래그, 또는 조절 장치로 확대 및 회전 최적화
-                  </p>
+
+                {/* Manipulation Control Center */}
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 bg-slate-900 border border-slate-800 p-1 sm:p-1.5 rounded-2xl md:mx-auto">
+                  <button
+                    type="button"
+                    onClick={() => setZoomScale(prev => Math.max(prev - 0.25, 0.5))}
+                    className="p-1 px-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 hover:text-white transition-all text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    title="축소"
+                  >
+                    <ZoomOut className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">축소</span>
+                  </button>
+                  
+                  <span className="text-[10px] font-mono text-amber-400 px-1.5 sm:px-2 py-0.5 sm:py-1 font-bold min-w-[42px] sm:min-w-[50px] text-center bg-slate-950 rounded-lg">
+                    {Math.round(zoomScale * 100)}%
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setZoomScale(prev => Math.min(prev + 0.25, 3))}
+                    className="p-1 px-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 hover:text-white transition-all text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    title="확대"
+                  >
+                    <ZoomIn className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">확대</span>
+                  </button>
+
+                  <div className="w-[1px] h-4 bg-slate-800 mx-0.5 sm:mx-1" />
+
+                  <button
+                    type="button"
+                    onClick={() => setRotation(prev => (prev + 90) % 360)}
+                    className="p-1 px-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 hover:text-white transition-all text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    title="회전"
+                  >
+                    <RotateCw className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">회전</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setZoomScale(1);
+                      setRotation(0);
+                    }}
+                    className="p-1 px-1.5 sm:px-2.5 bg-slate-950 hover:bg-slate-850 rounded-xl text-slate-400 hover:text-slate-200 transition-all text-[9px] sm:text-[10px] font-bold cursor-pointer"
+                  >
+                    초기화
+                  </button>
+
+                  <div className="w-[1px] h-4 bg-slate-800 mx-0.5 sm:mx-1" />
+
+                  {/* Sidebar Toggle Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowZoomSidebar(prev => !prev)}
+                    className={`p-1 px-2.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all ${
+                      showZoomSidebar 
+                        ? 'bg-amber-500 hover:bg-amber-600 text-slate-950 font-black' 
+                        : 'bg-slate-800 text-slate-300 hover:text-white'
+                    }`}
+                    title="소통창 토글"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">{showZoomSidebar ? '소통방 숨기기' : '소통방 & 댓글 보기'}</span>
+                    <span className="sm:hidden">{showZoomSidebar ? '소통 숨김' : '의견달기'}</span>
+                  </button>
+                </div>
+
+                {/* Exit / Save controls */}
+                <div className="flex items-center gap-1.5 sm:gap-2 self-end lg:self-auto shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => startDownload(zoomedPaper)}
+                    className="py-1.5 sm:py-2 px-2.5 sm:px-3.5 bg-slate-800 hover:bg-slate-700 text-amber-400 text-[10px] sm:text-xs font-bold rounded-xl shadow transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">전체 파일 다운로드</span>
+                    <span className="sm:hidden">다운</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setZoomedPaper(null)}
+                    className="p-1.5 sm:p-2 bg-slate-800 hover:bg-rose-600 hover:text-white text-slate-350 rounded-xl transition-all cursor-pointer"
+                    title="닫기 (Esc)"
+                  >
+                    <X className="h-4 sm:h-5 w-4 sm:w-5" />
+                  </button>
                 </div>
               </div>
 
-              {/* Manipulation Control Center */}
-              <div className="flex flex-wrap items-center gap-2 bg-slate-900 border border-slate-800 p-1.5 rounded-2xl md:mx-auto">
-                <button
-                  type="button"
-                  onClick={() => setZoomScale(prev => Math.max(prev - 0.25, 0.5))}
-                  className="p-1 px-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 hover:text-white transition-all text-xs font-bold flex items-center gap-1 cursor-pointer"
-                  title="축소"
-                >
-                  <ZoomOut className="h-3.5 w-3.5" />
-                  <span>축소</span>
-                </button>
+              {/* Split Viewport Layout Container */}
+              <div className="flex-1 flex flex-col lg:flex-row gap-3 sm:gap-4 overflow-hidden min-h-0">
                 
-                <span className="text-[10px] font-mono text-amber-400 px-2 font-bold min-w-[50px] text-center bg-slate-950 py-1 rounded-lg">
-                  {Math.round(zoomScale * 100)}%
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() => setZoomScale(prev => Math.min(prev + 0.25, 3))}
-                  className="p-1 px-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 hover:text-white transition-all text-xs font-bold flex items-center gap-1 cursor-pointer"
-                  title="확대"
-                >
-                  <ZoomIn className="h-3.5 w-3.5" />
-                  <span>확대</span>
-                </button>
-
-                <div className="w-[1px] h-4 bg-slate-800 mx-1" />
-
-                <button
-                  type="button"
-                  onClick={() => setRotation(prev => (prev + 90) % 360)}
-                  className="p-1 px-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300 hover:text-white transition-all text-xs font-bold flex items-center gap-1 cursor-pointer"
-                  title="회전"
-                >
-                  <RotateCw className="h-3.5 w-3.5" />
-                  <span>회전</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setZoomScale(1);
-                    setRotation(0);
-                  }}
-                  className="p-1 px-2.5 bg-slate-950 hover:bg-slate-850 rounded-xl text-slate-400 hover:text-slate-200 transition-all text-[10px] font-bold cursor-pointer mr-1"
-                >
-                  초기화
-                </button>
-
-                <div className="w-[1px] h-4 bg-slate-800 mx-1" />
-
-                {/* Sidebar Toggle Button */}
-                <button
-                  type="button"
-                  onClick={() => setShowZoomSidebar(prev => !prev)}
-                  className={`p-1 px-2.5 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all ${
-                    showZoomSidebar 
-                      ? 'bg-amber-500 hover:bg-amber-600 text-slate-950 font-black' 
-                      : 'bg-slate-800 text-slate-300 hover:text-white'
-                  }`}
-                  title="독자 소통방 토글"
-                >
-                  <MessageSquare className="h-3.5 w-3.5" />
-                  <span>{showZoomSidebar ? '소통방 숨기기' : '소통방 & 댓글 보기'}</span>
-                </button>
-              </div>
-
-              {/* Action Actions */}
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => startDownload(zoomedPaper)}
-                  className="py-2 px-3.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow transition-all cursor-pointer flex items-center gap-1.5"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  <span>전체 파일 다운로드</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setZoomedPaper(null)}
-                  className="p-2 bg-slate-800 hover:bg-rose-600 hover:text-white text-slate-300 rounded-xl transition-all cursor-pointer"
-                  title="닫기 (Esc)"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Split Viewport Layout Container */}
-            <div className="flex-1 flex flex-col lg:flex-row gap-4 overflow-hidden min-h-0">
-              
-              {/* Display Canvas Frame Container */}
-              <div className="flex-1 overflow-auto flex items-center justify-center p-4 max-h-full cursor-grab active:cursor-grabbing relative custom-scrollbar bg-black/20 rounded-2xl border border-slate-900">
-                <div 
-                  className="transition-transform duration-200 ease-out origin-center"
-                  style={{ transform: `scale(${zoomScale}) rotate(${rotation}deg)` }}
-                >
-                  {zoomedPaper.fileDataUrl ? (
-                    <img
-                      src={zoomedPaper.fileDataUrl}
-                      alt={zoomedPaper.title}
-                      referrerPolicy="no-referrer"
-                      className="max-h-[68vh] lg:max-h-[82vh] object-contain shadow-2xl rounded-lg pointer-events-auto border-2 border-slate-850"
-                    />
-                  ) : (
-                    <div className="text-center py-20 text-slate-500">
-                      <BookOpen className="h-16 w-16 mx-auto text-slate-750 mb-3" />
-                      <p className="text-sm font-semibold">고해상도 원본 이미지를 찾을 수 없습니다.</p>
-                    </div>
-                  )}
+                {/* Display Canvas Frame Container */}
+                <div className="flex-1 overflow-auto p-1 sm:p-4 max-h-full cursor-grab active:cursor-grabbing relative custom-scrollbar bg-black/20 rounded-2xl border border-slate-900 flex">
+                  <div 
+                    className="m-auto transition-all duration-200 ease-out origin-center shrink-0 flex items-center justify-center p-2"
+                    style={{ transform: `rotate(${rotation}deg)` }}
+                  >
+                    {zoomedPaper.fileDataUrl ? (
+                      <img
+                        src={zoomedPaper.fileDataUrl}
+                        alt={zoomedPaper.title}
+                        referrerPolicy="no-referrer"
+                        className="shadow-2xl rounded-lg pointer-events-auto border border-slate-800 object-contain transition-all"
+                        style={{
+                          height: `${baseHeight * zoomScale}vh`,
+                          width: 'auto',
+                          maxWidth: zoomScale > 1 ? 'none' : '100%',
+                          transition: 'height 0.15s ease-out'
+                        }}
+                      />
+                    ) : (
+                      <div className="text-center py-20 text-slate-500 m-auto">
+                        <BookOpen className="h-16 w-16 mx-auto text-slate-750 mb-3" />
+                        <p className="text-sm font-semibold">고해상도 원본 이미지를 찾을 수 없습니다.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
 
               {/* Right Sidebar: Details & Live Comments */}
               {showZoomSidebar && (
@@ -1212,7 +1231,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
             </div>
 
             {/* Scale Hint Bar */}
-            <div className="mt-4 flex items-center justify-between text-slate-500 text-[10px] font-mono">
+            <div className="mt-4 flex items-center justify-between text-slate-500 text-[10px] font-mono shrink-0">
               <span>대구일마이스터고 신문고 원본 돋보기 뷰어</span>
               <div className="flex gap-4">
                 <span>• 마우스 드래그/휠 스크롤 또는 터치 제스처 연동</span>
@@ -1220,7 +1239,8 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
               </div>
             </div>
           </motion.div>
-        )}
+          );
+        })()}
       </AnimatePresence>
     </div>
   );
