@@ -38,6 +38,7 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -52,6 +53,7 @@ export default function App() {
       setDeferredPrompt(null);
       setIsInstallable(false);
       setIsInstalled(true);
+      setShowInstallModal(false);
       console.log("월간 사람책 PWA 앱이 정상적으로 설치되었습니다.");
     };
 
@@ -73,12 +75,16 @@ export default function App() {
   }, []);
 
   const handleInstallApp = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User install request choice outcome: ${outcome}`);
-    setDeferredPrompt(null);
-    setIsInstallable(false);
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User install request choice outcome: ${outcome}`);
+      setDeferredPrompt(null);
+      setIsInstallable(false);
+    } else {
+      // If there's no deferredPrompt (such as iOS Safari or nested app browser), always prompt our custom visual install dialog
+      setShowInstallModal(true);
+    }
   };
 
   // Load all data on mount
@@ -199,27 +205,33 @@ export default function App() {
 
             {/* Account Controls & PWA Install */}
             <div className="hidden sm:flex items-center gap-3">
-              {isInstallable && (
+              {!isInstalled && (
                 <button
                   type="button"
                   onClick={handleInstallApp}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer border border-amber-500 animate-pulse"
-                  title="월간 사람책 정식 앱으로 설치"
+                  title="로그인 없이 홈 화면에 바로 설치"
                 >
-                  <Sparkles className="h-3.5 w-3.5" />
+                  <Sparkles className="h-3.5 w-3.5 animate-spin" style={{ animationDuration: '4s' }} />
                   <span>앱 설치하기</span>
                 </button>
+              )}
+              {isInstalled && (
+                <span className="flex items-center gap-1 px-3 py-1.5 bg-emerald-550/10 text-emerald-700 border border-emerald-500/20 font-bold text-[10.5px] rounded-xl select-none">
+                  <span>앱 모드로 실행 중</span>
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping inline-block" />
+                </span>
               )}
               <AuthModal onAuthChange={handleAuthChange} currentUser={currentUser} />
             </div>
 
             {/* Mobile Nav Trigger */}
             <div className="flex items-center gap-2 lg:hidden">
-              {isInstallable && (
+              {!isInstalled && (
                 <button
                   type="button"
                   onClick={handleInstallApp}
-                  className="flex items-center gap-1 p-1.5 bg-amber-400 hover:bg-amber-500 text-slate-900 rounded-lg text-[10px] font-bold shadow-xs transition-all"
+                  className="flex items-center gap-1 p-1.5 bg-amber-400 hover:bg-amber-500 text-slate-900 rounded-lg text-[10px] font-bold shadow-xs transition-all animate-pulse"
                   title="월간 사람책 앱 설치"
                 >
                   <Sparkles className="h-3 w-3" />
@@ -280,13 +292,13 @@ export default function App() {
                   </button>
                 )}
 
-                {isInstallable && (
+                {!isInstalled && (
                   <button
                     type="button"
                     onClick={() => { handleInstallApp(); setMobileMenuOpen(false); }}
                     className="block w-full text-left text-xs font-extrabold px-4 py-3 bg-amber-400 hover:bg-amber-500 text-slate-900 rounded-lg shadow-xs flex items-center justify-between border border-amber-500 cursor-pointer transition-all animate-pulse"
                   >
-                    <span>✨ 홈 화면에 "월간 사람책" 앱 추가하기</span>
+                    <span>✨ 홈 화면에 "월간 사람책" 앱 설치 (로그인 불필요)</span>
                     <Sparkles className="h-4 w-4" />
                   </button>
                 )}
@@ -412,24 +424,23 @@ export default function App() {
                     </div>
 
                     <div className="flex border-t border-slate-800 md:border-t-0 pt-4 md:pt-0 shrink-0 flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                      {isInstallable ? (
-                        <button
-                          onClick={handleInstallApp}
-                          className="px-5 py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 animate-bounce hover:scale-105"
-                        >
-                          <Sparkles className="h-4 w-4" />
-                          <span>1초 만에 앱 설치하기</span>
-                        </button>
+                      {!isInstalled ? (
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={handleInstallApp}
+                            className="px-6 py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold text-xs rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 animate-bounce hover:scale-105"
+                          >
+                            <Sparkles className="h-4 w-4 text-slate-950 animate-spin" style={{ animationDuration: '3s' }} />
+                            <span>1초 만에 앱 설치하기 (로그인 불필요)</span>
+                          </button>
+                          <span className="text-[10px] text-slate-400 text-center font-medium">
+                            💡 누르면 본인 디바이스에 맞춘 설치 창이 열립니다
+                          </span>
+                        </div>
                       ) : (
-                        <div className="text-slate-400 text-xs font-semibold bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800 flex flex-col gap-1.5 max-w-md">
-                          <span className="text-white text-[11px] font-bold flex items-center gap-1">
-                            <Info className="h-3.5 w-3.5 text-amber-400" />
-                            <span>디바이스별 간편 홈 화면 설치법</span>
-                          </span>
-                          <span className="text-[10.5px] text-slate-400 font-medium space-y-1 block">
-                            <span>• <strong>Android (Chrome)</strong>: 브라우저 상단 메뉴 버튼 ➡ <strong>[앱 설치]</strong> 또는 <strong>[홈 화면에 추가]</strong></span>
-                            <span className="block">• <strong>iPhone (Safari)</strong>: 하단 중간 <strong>[공유]</strong> 버튼 ➡ 스크롤 내린 뒤 <strong>[홈 화면에 추가]</strong> 터치</span>
-                          </span>
+                        <div className="bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 rounded-2xl flex items-center gap-2.5">
+                          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                          <span className="text-emerald-400 text-xs font-bold">월간 사람책 전용 앱 모드 기동 완료</span>
                         </div>
                       )}
                     </div>
@@ -787,6 +798,141 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* PWA CUSTOM INSTALLATION SERVICE ASSIST MODAL */}
+      <AnimatePresence>
+        {showInstallModal && (
+          <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+            {/* Backdrop Blur */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowInstallModal(false)}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+            />
+
+            {/* Modal Body */}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-200 overflow-hidden relative z-10 flex flex-col max-h-[90vh]"
+            >
+              <div className="bg-[#1E3A5F] text-white p-6 relative overflow-hidden shrink-0">
+                <div className="absolute top-0 right-0 -mr-10 -mt-10 w-32 h-32 bg-amber-400/10 rounded-full blur-xl" />
+                <button
+                  type="button"
+                  onClick={() => setShowInstallModal(false)}
+                  className="absolute top-4 right-4 text-white/70 hover:text-white hover:bg-white/10 p-1.5 rounded-full transition-all cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <span className="h-12 w-12 bg-white rounded-2xl flex items-center justify-center border border-white/20 p-2 shadow-inner shrink-0">
+                    <MeisterLogo className="h-full w-full" />
+                  </span>
+                  <div>
+                    <div className="inline-flex items-center gap-1 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs uppercase">
+                      <span>로그인 필요 없음</span>
+                    </div>
+                    <h3 className="text-base font-bold text-white tracking-tight mt-1 flex items-center gap-1.5">
+                      <span>📱 "월간 사람책" 모바일 앱 설치</span>
+                    </h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Steps & Tab Content */}
+              <div className="p-6 overflow-y-auto space-y-6 flex-1 text-slate-700">
+                <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">
+                  기기별 설치 안내 가이드
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Android / Chrome Panel */}
+                  <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4.5 space-y-3 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">🤖</span>
+                        <span className="font-extrabold text-xs text-slate-800">삼성 / 안드로이드 (크롬)</span>
+                      </div>
+                      <p className="text-[10.5px] text-slate-500 mt-2 leading-relaxed">
+                        구글 크롬, 웨일, 네이버 등의 브라우저에서 편리하게 자동 설치가 지원됩니다.
+                      </p>
+                      
+                      <ol className="text-[11px] text-slate-650 space-y-2 mt-4 list-decimal pl-4.5 font-medium">
+                        <li>
+                          브라우저 주소창 우측의 <strong>더보기 (⋮) 오버플로우 버튼</strong>을 터치합니다.
+                        </li>
+                        <li>
+                          메뉴 목록 중 <strong>'앱 설치'</strong> 또는 <strong>'홈 화면에 추가'</strong>를 누릅니다.
+                        </li>
+                        <li>
+                          설치 팝업이 나타나면 <strong>'설치'</strong>를 최종 선택해주세요.
+                        </li>
+                      </ol>
+                    </div>
+
+                    <div className="p-2.5 bg-[#FAFBCF]/30 border border-amber-300/40 rounded-xl mt-3">
+                      <p className="text-[10px] text-slate-555 leading-relaxed font-semibold">
+                        💡 설치 후 휴대폰 바탕화면에 생성되는 <strong>"월간 사람책" 아이콘</strong>을 누르면 곧바로 네이티브 앱처럼 실행됩니다.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* iOS / iPhone Panel */}
+                  <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4.5 space-y-3 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">🍎</span>
+                        <span className="font-extrabold text-xs text-slate-800">아이폰 / iOS (사파리)</span>
+                      </div>
+                      <p className="text-[10.5px] text-slate-500 mt-2 leading-relaxed">
+                        애플 정책에 따라 Safari 브라우저에서 아주 간편하게 추가 가능합니다.
+                      </p>
+
+                      <ol className="text-[11px] text-slate-650 space-y-2 mt-4 list-decimal pl-4.5 font-medium">
+                        <li>
+                          아이폰 화면 하단 툴바의 <strong>공유 버튼 (📤 네모 위 화살표 아이콘)</strong>을 터치합니다.
+                        </li>
+                        <li>
+                          스마트 제어창 아래로 스크롤하여 <strong>'홈 화면에 추가'</strong> 항목을 선택합니다.
+                        </li>
+                        <li>
+                          우측 상단의 <strong>'추가'</strong> 버튼을 눌러 확정하면 완료됩니다!
+                        </li>
+                      </ol>
+                    </div>
+
+                    <div className="p-2.5 bg-[#D9A441]/10 border border-[#D9A441]/15 rounded-xl mt-3">
+                      <p className="text-[10px] text-amber-805 leading-relaxed font-semibold">
+                        📌 주소 표시줄이나 방해 요소가 사라져 오직 꽉 찬 전체화면으로 원활히 지면 신문을 감상할 수 있습니다.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom control */}
+              <div className="p-5 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                <span className="text-[10.5px] text-slate-400 font-semibold">
+                  로그인하지 않고 설치해도 자유롭게 전체 서비스가 제공됩니다.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowInstallModal(false)}
+                  className="px-5 py-2 bg-[#1E3A5F] hover:bg-[#152943] text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer w-full sm:w-auto text-center"
+                >
+                  가이드 확인 완료
+                </button>
+              </div>
+
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
