@@ -15,7 +15,7 @@ export default function NoticeWriteView({ currentUser, onRefresh }: NoticeWriteV
   const [noticeSuccess, setNoticeSuccess] = useState(false);
   const [noticeLoading, setNoticeLoading] = useState(false);
 
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'librarian';
 
   const handleNoticeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

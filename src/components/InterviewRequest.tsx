@@ -12,12 +12,13 @@ interface InterviewRequestProps {
 }
 
 export default function InterviewRequest({ currentUser, reservations, onRefresh, onOpenLogin }: InterviewRequestProps) {
+  const isStudent = !currentUser || currentUser.role === 'student' || currentUser.role === 'interview_student' || currentUser.role === 'picture_student';
+
   // Form values
   const [userName, setUserName] = useState(currentUser?.name || '');
+  const [userDept, setUserDept] = useState(!isStudent ? '교무부' : '스마트팩토리과');
   const [userGradeClass, setUserGradeClass] = useState(currentUser?.student_number || '');
   const [userContact, setUserContact] = useState('');
-  const [targetType, setTargetType] = useState<'student' | 'teacher'>('student');
-  const [targetName, setTargetName] = useState('');
   const [date, setDate] = useState('2026-06-12');
   const [time, setTime] = useState('14:00');
   const [topic, setTopic] = useState('');
@@ -33,6 +34,11 @@ export default function InterviewRequest({ currentUser, reservations, onRefresh,
       if (currentUser.student_number) {
         setUserGradeClass(currentUser.student_number);
       }
+      if (!isStudent) {
+        setUserDept('교무부');
+      } else {
+        setUserDept('스마트팩토리과');
+      }
     }
   });
 
@@ -45,13 +51,17 @@ export default function InterviewRequest({ currentUser, reservations, onRefresh,
     }
 
     setLoading(true);
+    const resolvedTargetType = (!isStudent) ? 'teacher' : 'student';
+    const resolvedTargetName = userName.trim() + ' (신청자 본인)';
+
     try {
       await addReservation({
         userName: userName.trim(),
-        userGradeClass: userGradeClass.trim() || undefined,
+        userDept: userDept.trim() || undefined,
+        userGradeClass: (isStudent ? userGradeClass.trim() : '교직원') || undefined,
         userContact: userContact.trim(),
-        targetType,
-        targetName: targetName.trim(),
+        targetType: resolvedTargetType,
+        targetName: resolvedTargetName,
         date,
         time,
         topic: topic.trim(),
@@ -71,7 +81,6 @@ export default function InterviewRequest({ currentUser, reservations, onRefresh,
     setIsCompleted(false);
     setTopic('');
     setContent('');
-    setTargetName('');
     setUserContact('');
   };
 
@@ -134,7 +143,7 @@ export default function InterviewRequest({ currentUser, reservations, onRefresh,
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
                 {/* Applicant Profile info */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-705 mb-1.5">신청자 이름</label>
                     <input
@@ -144,18 +153,6 @@ export default function InterviewRequest({ currentUser, reservations, onRefresh,
                       onChange={(e) => setUserName(e.target.value)}
                       className="w-full text-xs py-2.5 px-3 bg-slate-50 cursor-not-allowed text-slate-500 rounded-xl border border-slate-200 outline-none"
                       disabled
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-705 mb-1.5">학년/반 또는 소속교과</label>
-                    <input
-                      type="text"
-                      required
-                      value={userGradeClass}
-                      onChange={(e) => setUserGradeClass(e.target.value)}
-                      placeholder={currentUser.role === 'student' ? '3학년 1반' : '기술교육실무부'}
-                      className="w-full text-xs py-2.5 px-3 rounded-xl border border-slate-200 focus:outline-none focus:border-[#1E3A5F]"
                     />
                   </div>
 
@@ -173,45 +170,34 @@ export default function InterviewRequest({ currentUser, reservations, onRefresh,
                       />
                     </span>
                   </div>
-                </div>
-
-                {/* Target profile section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-50 pt-3">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-705 mb-1.5">인터뷰 대상 종류</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setTargetType('student')}
-                        className={`py-2 text-xs font-medium rounded-xl border cursor-pointer transition-all ${
-                          targetType === 'student' ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]' : 'bg-white text-slate-600'
-                        }`}
-                      >
-                        학생 인터뷰
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setTargetType('teacher')}
-                        className={`py-2 text-xs font-medium rounded-xl border cursor-pointer transition-all ${
-                          targetType === 'teacher' ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]' : 'bg-white text-slate-600'
-                        }`}
-                      >
-                        선생님 인터뷰
-                      </button>
-                    </div>
-                  </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-705 mb-1.5">인터뷰 대상자 성함/팀명</label>
+                    <label className="block text-xs font-bold text-slate-750 mb-1.5">
+                      {isStudent ? '소속 학과' : '소속 부서'}
+                    </label>
                     <input
                       type="text"
                       required
-                      value={targetName}
-                      onChange={(e) => setTargetName(e.target.value)}
-                      placeholder="대상 학생 이름 혹은 선생님 성함 입력"
+                      value={userDept}
+                      onChange={(e) => setUserDept(e.target.value)}
+                      placeholder={isStudent ? '예: 스마트팩토리과' : '예: 교무부'}
                       className="w-full text-xs py-2.5 px-3 rounded-xl border border-slate-200 focus:outline-none focus:border-[#1E3A5F]"
                     />
                   </div>
+
+                  {isStudent && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-705 mb-1.5">학년/반/번호</label>
+                      <input
+                        type="text"
+                        required
+                        value={userGradeClass}
+                        onChange={(e) => setUserGradeClass(e.target.value)}
+                        placeholder="예: 3학년 1반 23번"
+                        className="w-full text-xs py-2.5 px-3 rounded-xl border border-slate-200 focus:outline-none focus:border-[#1E3A5F]"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Timeslot specifications */}
@@ -330,8 +316,12 @@ export default function InterviewRequest({ currentUser, reservations, onRefresh,
 
                   <div className="grid grid-cols-2 gap-1.5 border-t border-slate-100 pt-2.5 mt-2.5 text-[10px] text-slate-400 font-medium">
                     <div>
-                      <span className="block text-[9px] text-slate-300">INTERVIEW TARGET</span>
-                      <span className="text-slate-600 font-semibold">{r.targetName} ({r.targetType === 'student' ? '학생' : '교사'})</span>
+                      <span className="block text-[9px] text-slate-300">신청인 및 소속</span>
+                      <span className="text-slate-600 font-semibold">
+                        {r.userDept && `${r.userDept} `}
+                        {r.userGradeClass && r.userGradeClass !== '교직원' && `(${r.userGradeClass}) `}
+                        {r.userName}
+                      </span>
                     </div>
                     <div>
                       <span className="block text-[9px] text-slate-300">REQUESTED DATE</span>

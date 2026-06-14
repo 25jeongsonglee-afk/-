@@ -12,6 +12,8 @@ import InquiryView from './components/InquiryView';
 import NoticeWriteView from './components/NoticeWriteView';
 import AdminPanel from './components/AdminPanel';
 import meisterLogo from './assets/images/meister_logo_1781278274851.jpg';
+import blueFlowers from './assets/images/blue_flowers_1781416121351.jpg';
+import MeisterLogo from './components/MeisterLogo';
 
 import { 
   BookOpen, Calendar as CalendarIcon, MessageSquare, Shield, HelpCircle, 
@@ -96,14 +98,8 @@ export default function App() {
               onClick={() => setActiveTab('home')} 
               className="flex items-center gap-3 cursor-pointer group shrink-0"
             >
-              <div className="h-11 w-11 bg-white rounded-xl overflow-hidden flex items-center justify-center border border-slate-200 shadow-sm group-hover:scale-105 transition-all">
-                <img 
-                  id="img-header-logo"
-                  src={meisterLogo} 
-                  alt="대구일마이스터고 로고" 
-                  className="h-full w-full object-cover" 
-                  referrerPolicy="no-referrer" 
-                />
+              <div className="h-16 w-16 bg-white rounded-2xl p-1 flex items-center justify-center border border-slate-200 shadow-sm group-hover:scale-105 transition-all">
+                <MeisterLogo className="h-full w-full" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -122,7 +118,7 @@ export default function App() {
                 { id: 'newspapers', label: '대구일마이스터고 신문' },
                 { id: 'interviews', label: '인터뷰 신청 및 일정' },
                 { id: 'inquiries', label: '문의하기' },
-                ...(currentUser?.role === 'admin' ? [{ id: 'notices', label: '소식/공지 등록 📢' }] : [])
+                ...(currentUser?.role === 'admin' || currentUser?.role === 'librarian' ? [{ id: 'notices', label: '소식/공지 등록 📢' }] : [])
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -138,7 +134,7 @@ export default function App() {
               ))}
 
               {/* Secret Admin panel access tab */}
-              {currentUser?.role === 'admin' && (
+              {(currentUser?.role === 'admin' || currentUser?.role === 'librarian') && (
                 <button
                   onClick={() => setActiveTab('admin')}
                   className={`text-xs font-bold px-4 py-2.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
@@ -190,7 +186,7 @@ export default function App() {
                   { id: 'newspapers', label: '대구일마이스터고 신문' },
                   { id: 'interviews', label: '인터뷰 신청 및 일정' },
                   { id: 'inquiries', label: '문의하기' },
-                  ...(currentUser?.role === 'admin' ? [{ id: 'notices', label: '소식/공지 등록 📢' }] : [])
+                  ...(currentUser?.role === 'admin' || currentUser?.role === 'librarian' ? [{ id: 'notices', label: '소식/공지 등록 📢' }] : [])
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -203,7 +199,7 @@ export default function App() {
                   </button>
                 ))}
                 
-                {currentUser?.role === 'admin' && (
+                {(currentUser?.role === 'admin' || currentUser?.role === 'librarian') && (
                   <button
                     onClick={() => { setActiveTab('admin'); setMobileMenuOpen(false); }}
                     className={`block w-full text-left text-xs font-bold px-4 py-3 rounded-lg text-rose-650 ${
@@ -277,14 +273,11 @@ export default function App() {
                     <div className="lg:col-span-5 hidden lg:block">
                       <div className="relative p-2 bg-white/5 border border-white/10 rounded-2xl shadow-xl overflow-hidden backdrop-blur-xs">
                         <img 
-                          src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600" 
-                          alt="Meister campus study"
+                          src={blueFlowers} 
+                          alt="Blue Delphinium Flowers"
+                          referrerPolicy="no-referrer"
                           className="rounded-xl w-full h-64 object-cover filter brightness-95"
                         />
-                        <div className="absolute bottom-5 left-5 right-5 bg-slate-900/80 backdrop-blur-md p-4 rounded-xl border border-white/10">
-                          <span className="text-[10px] text-[#D9A441] font-bold block uppercase tracking-wider">LATEST STORIES</span>
-                          <span className="text-xs font-bold block text-white mt-1">글로벌 해외 인턴십 현장의 생생한 극복담 취재 진행중</span>
-                        </div>
                       </div>
                     </div>
 
@@ -465,9 +458,9 @@ export default function App() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
                       { roleName: '대표학생', name: '정송이 (2학년)', desc: '월간 사람책 총괄', img: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=300', icon: GraduationCap },
-                      { roleName: '인터뷰 학생', name: '김민준 (2학년), 남희준, 서정재 (1학년)', desc: '학우 동아리 활동, 대회 현장 취재 및 실시간 제보문 작성', img: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&q=80&w=300', icon: Users },
-                      { roleName: '사진/촬영 전담', name: '구대근 (2학년), 박민유 (1학년)', desc: '인터뷰 사진, 교내 행사사진 등 촬영 담당', img: 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=300', icon: Camera },
-                      { roleName: '지도교사 및 관리자', name: '전은경 선생님 (도서관 사서 선생님)', desc: '사람책 플랫폼 관리 및 인프라 신규 공지 조율 총책', img: 'https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?auto=format&fit=crop&q=80&w=300', icon: Shield }
+                      { roleName: '인터뷰 담당 학생', name: '김민준 (2학년), 남희준, 서정재 (1학년)', desc: '학우 동아리 활동, 대회 현장 취재 및 실시간 제보문 작성', img: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&q=80&w=300', icon: Users },
+                      { roleName: '사진/촬영 담당 학생', name: '구대근 (2학년), 박민유 (1학년)', desc: '인터뷰 사진, 교내 행사사진 등 촬영 담당', img: 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=300', icon: Camera },
+                      { roleName: '지도교사', name: '전은경 선생님 (도서관 사서 선생님)', desc: '사람책 플랫폼 관리 및 인프라 신규 공지 조율 총책', img: 'https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?auto=format&fit=crop&q=80&w=300', icon: Shield }
                     ].map((crew, id) => (
                       <div key={id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-lg transition-all flex flex-col justify-between">
                         <div className="h-40 relative">
@@ -626,14 +619,8 @@ export default function App() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6 border-b border-slate-800 pb-8">
             <div className="space-y-2">
               <div className="flex items-center justify-center sm:justify-start gap-2.5">
-                <div className="h-6 w-6 rounded-md bg-white overflow-hidden flex items-center justify-center border border-slate-700 shadow-sm">
-                  <img 
-                    id="img-footer-logo"
-                    src={meisterLogo} 
-                    alt="대구일마이스터고 로고" 
-                    className="h-full w-full object-cover" 
-                    referrerPolicy="no-referrer" 
-                  />
+                <div className="h-11 w-11 rounded-xl bg-white p-1 flex items-center justify-center border border-slate-700 shadow-sm">
+                  <MeisterLogo className="h-full w-full" />
                 </div>
                 <span className="font-serif font-bold text-lg text-white">월간 사람책</span>
               </div>

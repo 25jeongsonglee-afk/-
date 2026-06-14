@@ -1,4 +1,4 @@
-export type UserRole = 'student' | 'teacher' | 'admin';
+export type UserRole = 'student' | 'teacher' | 'admin' | 'interview_student' | 'picture_student' | 'librarian';
 
 export interface User {
   id: string;
@@ -12,7 +12,8 @@ export interface InterviewReservation {
   id: string;
   userId: string;
   userName: string;
-  userGradeClass?: string; // e.g. 1st grade, 2nd class
+  userDept?: string; // e.g. 스마트팩토리과, 교무부
+  userGradeClass?: string; // e.g. 3학년 1반 23번 (또는 학년-반-번호)
   userContact: string;
   targetType: 'student' | 'teacher';
   targetName: string; // The person being interviewed

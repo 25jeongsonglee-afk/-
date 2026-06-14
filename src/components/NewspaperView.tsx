@@ -24,8 +24,9 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser }: Ne
   const [fileName, setFileName] = useState('');
   const [uploadError, setUploadError] = useState('');
 
-  const isAdmin = currentUser?.role === 'admin';
-  const canManageNewspaper = currentUser?.role === 'admin' || currentUser?.role === 'teacher';
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'librarian';
+  const canManageNewspaper = currentUser?.role === 'admin' || currentUser?.role === 'librarian';
+  const isTeacher = currentUser?.role === 'teacher' || currentUser?.role === 'admin' || currentUser?.role === 'librarian';
 
   // Comments states
   const [selectedNewspaper, setSelectedNewspaper] = useState<Newspaper | null>(null);
@@ -36,7 +37,6 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser }: Ne
   const [commentClassNum, setCommentClassNum] = useState('');
   const [commentName, setCommentName] = useState('');
   const [commentText, setCommentText] = useState('');
-  const [isTeacher, setIsTeacher] = useState(false);
   const [commentError, setCommentError] = useState('');
   const [commentSuccess, setCommentSuccess] = useState(false);
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
@@ -60,13 +60,11 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser }: Ne
     // Pre-populate fields based on currentUser to make it extremely friendly
     if (currentUser) {
       setCommentName(currentUser.name || '');
-      if (currentUser.role === 'teacher' || currentUser.role === 'admin') {
-        setIsTeacher(true);
+      if (currentUser.role === 'teacher' || currentUser.role === 'admin' || currentUser.role === 'librarian') {
         setCommentGrade('교직원');
         setCommentDept('교무부');
         setCommentClassNum('교직원');
       } else {
-        setIsTeacher(false);
         if (currentUser.student_number && currentUser.student_number.length >= 4) {
           const g = currentUser.student_number.substring(0, 1) + '학년';
           const cNum = currentUser.student_number.substring(1, 2) + '반 ' + parseInt(currentUser.student_number.substring(2)) + '번';
@@ -83,7 +81,6 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser }: Ne
       setCommentGrade('1학년');
       setCommentClassNum('');
       setCommentDept('');
-      setIsTeacher(false);
     }
     setCommentText('');
     setCommentError('');
@@ -622,28 +619,6 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser }: Ne
                         <Plus className="h-3.5 w-3.5 text-indigo-600" />
                         <span>독자 한마디 남기기</span>
                       </h4>
-                      
-                      {/* Teacher Toggle */}
-                      <label className="flex items-center gap-1.5 cursor-pointer bg-white border border-slate-200 rounded-lg px-2 py-0.5 shadow-sm hover:bg-indigo-50/40 transition-all select-none">
-                        <input
-                          type="checkbox"
-                          checked={isTeacher}
-                          onChange={(e) => {
-                            setIsTeacher(e.target.checked);
-                            if (e.target.checked) {
-                              setCommentGrade('');
-                              if (commentClassNum === '') setCommentClassNum('교직원');
-                              if (commentDept === '') setCommentDept('교무부');
-                            } else {
-                              setCommentGrade('1학년');
-                              setCommentClassNum('');
-                              setCommentDept('');
-                            }
-                          }}
-                          className="h-3 w-3 rounded text-indigo-600 border-slate-300 focus:ring-0 cursor-pointer"
-                        />
-                        <span className="text-[10px] text-slate-600 font-bold">저는 선생님(교직원)입니다</span>
-                      </label>
                     </div>
 
                     <form onSubmit={handleCommentSubmit} className="space-y-3">
@@ -738,16 +713,8 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser }: Ne
                             type="button"
                             onClick={() => {
                               setCommentDept(dept);
-                              if (dept === '교무부') {
-                                setIsTeacher(true);
+                              if (dept === '교무부' && isTeacher) {
                                 setCommentClassNum('교직원');
-                                setCommentGrade('');
-                              } else {
-                                if (isTeacher) {
-                                  setIsTeacher(false);
-                                  setCommentGrade('1학년');
-                                  setCommentClassNum('');
-                                }
                               }
                             }}
                             className="px-2 py-0.5 bg-white border border-slate-150 rounded-md hover:bg-indigo-50/50 hover:text-indigo-600 transition-colors text-slate-500 font-medium cursor-pointer"

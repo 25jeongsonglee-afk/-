@@ -38,7 +38,7 @@ export default function AdminPanel({ currentUser, reservations, inquiries, notic
   const [noticeTitle, setNoticeTitle] = useState('');
   const [noticeContent, setNoticeContent] = useState('');
 
-  const isAdmin = currentUser?.role === 'admin';
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'librarian';
 
   if (!isAdmin) {
     return (
@@ -201,14 +201,33 @@ export default function AdminPanel({ currentUser, reservations, inquiries, notic
                     filteredReservations.map((res) => (
                       <tr key={res.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="p-4">
-                          <div className="font-bold text-slate-800">{res.userName}</div>
-                          <div className="text-[10px] text-slate-400 font-normal mt-0.5">상세 소속: {res.userGradeClass || '인가필요'} | H.P: {res.userContact}</div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-slate-800 text-xs">{res.userName}</span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${res.targetType === 'student' ? 'bg-indigo-50 text-indigo-700' : 'bg-cyan-50 text-cyan-700'}`}>
+                              {res.targetType === 'student' ? '학생 독자' : '선생님 독자'}
+                            </span>
+                          </div>
+                          <div className="space-y-0.5 mt-1 text-[10px]">
+                            <div>
+                              <span className="text-slate-400">학과/부서:</span>{' '}
+                              <span className="text-slate-700 font-bold">{res.userDept || '소속 미지정'}</span>
+                            </div>
+                            {res.userGradeClass && (
+                              <div>
+                                <span className="text-slate-400">학년/반/번호:</span>{' '}
+                                <span className="text-slate-700 font-bold">{res.userGradeClass}</span>
+                              </div>
+                            )}
+                            <div className="text-slate-400 mt-1">
+                              연락처: <span className="text-slate-600 font-mono font-semibold">{res.userContact}</span>
+                            </div>
+                          </div>
                         </td>
                         <td className="p-4">
-                          <span className={`inline-block text-[9.5px] px-2 py-0.5 rounded font-bold ${res.targetType === 'student' ? 'bg-indigo-50 text-indigo-700' : 'bg-emerald-50 text-emerald-700'}`}>
-                            {res.targetType === 'student' ? '학생' : '교사의길'}
+                          <span className={`inline-block text-[9.5px] px-2 py-0.5 rounded font-bold ${res.targetType === 'student' ? 'bg-indigo-55 bg-indigo-50 text-indigo-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                            {res.targetType === 'student' ? '학생 기획' : '선생님 기획'}
                           </span>
-                          <div className="font-bold text-slate-800 mt-1">{res.targetName}</div>
+                          <div className="font-semibold text-[10px] text-slate-400 mt-1">기획 본인 대상</div>
                         </td>
                         <td className="p-4">
                           {editingResId === res.id ? (
