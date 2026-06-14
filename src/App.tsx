@@ -92,6 +92,75 @@ export default function App() {
     }
   };
 
+  const handleDownloadApp = () => {
+    const htmlContent = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>월간 사람책 대구일마이스터고 앱 실행기</title>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      background-color: #0f172a;
+      color: #cbd5e1;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 100vh; text-align: center;
+    }
+    .card {
+      max-width: 400px; width: 85%; padding: 32px; background: #1e293b; border: 1px solid #334155; border-radius: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+    }
+    .logo {
+      width: 96px; height: 96px; border-radius: 24px; margin-bottom: 24px; background: white; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+      display: inline-flex; align-items: center; justify-content: center; margin-left: auto; margin-right: auto;
+    }
+    h1 { font-size: 22px; font-weight: 800; color: #fff; margin: 0 0 8px 0; }
+    p { font-size: 13px; color: #94a3b8; line-height: 1.6; margin: 0 0 24px 0; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; box-sizing: border-box;
+      padding: 14px 28px; background: #FBBF24; color: #020617; font-weight: 800; font-size: 14px;
+      text-decoration: none; border-radius: 14px; transition: all 0.2s;
+    }
+    .btn:hover { background: #F59E0B; transform: scale(1.02); }
+  </style>
+  <script>
+    // Automating redirect
+    setTimeout(() => {
+      window.location.href = "https://ais-pre-zo56alaym5tjyzhu4dalh6-572787846781.asia-northeast1.run.app";
+    }, 1500);
+  </script>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <svg width="60" height="60" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100" height="100" rx="20" fill="#1E3A5F"/>
+        <path d="M25,35 Q50,25 75,35 V75 Q50,65 25,75 Z" fill="none" stroke="#FBBF24" stroke-width="6" stroke-linecap="round"/>
+        <path d="M50,30 V70" stroke="#FBBF24" stroke-width="4"/>
+        <circle cx="50" cy="50" r="4" fill="#FBBF24"/>
+      </svg>
+    </div>
+    <h1>월간 사람책</h1>
+    <p>대구일마이스터고 사람책 신문 플랫폼<br>전용 모바일/PC 로컬 실행기를 기동하고 있습니다...</p>
+    <a href="https://ais-pre-zo56alaym5tjyzhu4dalh6-572787846781.asia-northeast1.run.app" class="btn">
+      <span>지금 수동 입장하기 ➡</span>
+    </a>
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "월간_사람책_바로가기_앱.html";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleCopyUrl = () => {
     navigator.clipboard.writeText("https://ais-pre-zo56alaym5tjyzhu4dalh6-572787846781.asia-northeast1.run.app").then(() => {
       setCopied(true);
@@ -437,17 +506,22 @@ export default function App() {
 
                     <div className="flex border-t border-slate-800 md:border-t-0 pt-4 md:pt-0 shrink-0 flex-col sm:flex-row items-stretch sm:items-center gap-3">
                       {!isInstalled ? (
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                          <button
+                            onClick={handleDownloadApp}
+                            className="px-6 py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 animate-bounce hover:scale-105"
+                          >
+                            <Download className="h-4 w-4 text-slate-950 animate-bounce" />
+                            <span>1초 만에 앱 다운로드 (로그인 불필요)</span>
+                          </button>
+                          
                           <button
                             onClick={handleInstallApp}
-                            className="px-6 py-3.5 bg-amber-400 hover:bg-amber-500 text-slate-950 font-extrabold text-xs rounded-2xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 animate-bounce hover:scale-105"
+                            className="px-5 py-3.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-extrabold text-xs rounded-2xl border border-slate-700 transition-all cursor-pointer flex items-center justify-center gap-1.5"
                           >
-                            <Sparkles className="h-4 w-4 text-slate-950 animate-spin" style={{ animationDuration: '3s' }} />
-                            <span>1초 만에 앱 설치하기 (로그인 불필요)</span>
+                            <Sparkles className="h-3.5 w-3.5" />
+                            <span>기기별 자동설치 가이드</span>
                           </button>
-                          <span className="text-[10px] text-slate-400 text-center font-medium">
-                            💡 누르면 본인 디바이스에 맞춘 설치 창이 열립니다
-                          </span>
                         </div>
                       ) : (
                         <div className="bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 rounded-2xl flex items-center gap-2.5">
@@ -867,84 +941,102 @@ export default function App() {
                     </div>
                     <p className="text-[11px] text-slate-650 leading-relaxed font-semibold">
                       구글 AI 스튜디오의 프리뷰(아이프레임 프레임) 내부에서는 브라우저 보안 규정상 <strong>1초 간편 자동 설치</strong>가 제공되지 못합니다.
-                      <br />아래 배포 주소로 새 창을 열어서 접속하시면 로그인 단계 없이 모바일이나 바탕화면에 바로 설치 및 오프라인 이용이 가능합니다!
+                      <br />아래 단추를 눌러 <strong>전용 로컬 앱 실행기</strong>를 즉시 받으시거나, 새 창을 열어서 실행해 주세요. (가입은 필요 없습니다.)
                     </p>
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1.5">
-                      <input
-                        type="text"
-                        readOnly
-                        value="https://ais-pre-zo56alaym5tjyzhu4dalh6-572787846781.asia-northeast1.run.app"
-                        className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-[10px] text-slate-600 outline-none w-full font-mono font-bold shadow-inner"
-                      />
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          type="button"
-                          onClick={handleCopyUrl}
-                          className="px-3.5 py-2 bg-[#1E3A5F] hover:bg-[#152943] text-white text-[10.5px] font-bold rounded-xl transition-all shrink-0 flex items-center justify-center gap-1 cursor-pointer shadow-xs"
-                        >
-                          {copied ? (
-                            <>
-                              <Check className="h-3.5 w-3.5 text-emerald-400" />
-                              <span>복사완료</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-3.5 w-3.5" />
-                              <span>주소 복사</span>
-                            </>
-                          )}
-                        </button>
-                        <a
-                          href="https://ais-pre-zo56alaym5tjyzhu4dalh6-572787846781.asia-northeast1.run.app"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-3.5 py-2 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[10.5px] font-bold rounded-xl transition-all shrink-0 flex items-center justify-center gap-1 text-center shadow-xs"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          <span>새 창 열기</span>
-                        </a>
+
+                    <div className="flex flex-col gap-2 pt-1 font-sans">
+                      <button
+                        type="button"
+                        onClick={handleDownloadApp}
+                        className="w-full py-3 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Download className="h-4 w-4 text-slate-950 animate-bounce" />
+                        <span>📥 1초 만에 앱 바로가기 파일 다운로드 받기</span>
+                      </button>
+
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value="https://ais-pre-zo56alaym5tjyzhu4dalh6-572787846781.asia-northeast1.run.app"
+                          className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-[10px] text-slate-600 outline-none w-full font-mono font-bold shadow-inner"
+                        />
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={handleCopyUrl}
+                            className="px-3.5 py-2 bg-[#1E3A5F] hover:bg-[#152943] text-white text-[10.5px] font-bold rounded-xl transition-all shrink-0 flex items-center justify-center gap-1 cursor-pointer shadow-xs"
+                          >
+                            {copied ? (
+                              <>
+                                <Check className="h-3.5 w-3.5 text-emerald-400" />
+                                <span>복사완료</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-3.5 w-3.5" />
+                                <span>주소 복사</span>
+                              </>
+                            )}
+                          </button>
+                          <a
+                            href="https://ais-pre-zo56alaym5tjyzhu4dalh6-572787846781.asia-northeast1.run.app"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3.5 py-2 bg-amber-400 hover:bg-amber-500 text-slate-900 text-[10.5px] font-bold rounded-xl transition-all shrink-0 flex items-center justify-center gap-1 text-center shadow-xs"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            <span>새 창 열기</span>
+                          </a>
+                        </div>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-indigo-50/70 border border-[#1E3A5F]/15 rounded-2xl p-4.5 text-center space-y-3 shadow-xs">
+                  <div className="bg-indigo-50/70 border border-[#1E3A5F]/15 rounded-2xl p-4.5 text-center space-y-3 shadow-xs font-sans">
                     <div className="flex items-center justify-center gap-2">
                       <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-                      <span className="font-extrabold text-xs text-[#1E3A5F]">1초 간편 자동 설치 활성화</span>
+                      <span className="font-extrabold text-[#1E3A5F] text-xs">초고속 원클릭 안전 다운로드</span>
                     </div>
                     <p className="text-[11px] text-slate-650 leading-relaxed font-semibold max-w-sm mx-auto">
-                      아래 설치하기 단추를 누르면 브라우저의 전용 앱 기능이 트리거되며, 홈 화면에 '월간 사람책'이 원클릭 간편 추가됩니다 (가입 없음).
+                      아래 설치 파일 다운로드 단추를 누르면, 바탕화면이나 홈 화면 어디서든 더블클릭으로 바로 접근 가능한 <strong>초경량 로컬 실행기 파일</strong>이 다운로드됩니다!
                     </p>
 
-                    {isInstallable || deferredPrompt ? (
+                    <div className="flex flex-col gap-2.5">
                       <button
                         type="button"
-                        onClick={handleInstallApp}
-                        className="w-full py-4 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all shrink-0 flex items-center justify-center gap-2 animate-bounce hover:scale-[1.01] cursor-pointer"
+                        onClick={handleDownloadApp}
+                        className="w-full py-4 bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-sm rounded-xl shadow-md transition-all shrink-0 flex items-center justify-center gap-2 animate-bounce hover:scale-[1.01] cursor-pointer"
                       >
-                        <Sparkles className="h-4.5 w-4.5 text-slate-950 animate-spin" style={{ animationDuration: '3s' }} />
-                        <span>✨ 지금 정식 모바일 앱으로 즉시 설치하기 (클릭)</span>
+                        <Download className="h-5 w-5 text-slate-950 animate-bounce" />
+                        <span>📥 1초 만에 앱 바로가기 파일 다운로드 (추천)</span>
                       </button>
-                    ) : (
-                      <div className="space-y-2">
+
+                      {isInstallable || deferredPrompt ? (
+                        <button
+                          type="button"
+                          onClick={handleInstallApp}
+                          className="w-full py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs rounded-xl transition-all shrink-0 flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                        >
+                          <Sparkles className="h-4 w-4 text-[#1E3A5F]" />
+                          <span>✨ 브라우저 내장 앱 연동 시스템 실행</span>
+                        </button>
+                      ) : (
                         <button
                           type="button"
                           onClick={() => {
                             if (deferredPrompt) {
                               handleInstallApp();
                             } else {
-                              alert("현재 기기 및 브라우저에서 자동 설치를 대기 중입니다. 기기가 앱 모드를 내장 지원하지 않거나 이미 설치되었을 수 있으니, 작동하지 않는 경우 아래 수동 설치 안내를 활용해 주시면 대단히 감사하겠습니다.");
+                              alert("현재 기기 맞춤형 인터페이스를 초기화하는 중입니다. 앱이 활성화되지 않는 경우 최상단 노란색 [앱 바로가기 파일 다운로드]를 통해 기기에 설치해 주시면 감사하겠습니다!");
                             }
                           }}
-                          className="w-full py-3.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 font-extrabold text-[11px] rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                          className="w-full py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-[11px] rounded-xl transition-all shrink-0 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                         >
-                          <span>⚙️ 브라우저 임시 자동설치 제어 명령 실행</span>
+                          <span>⚙️ 브라우저 내장 앱 수동 강제 기동</span>
                         </button>
-                        <p className="text-[9.5px] text-slate-400 font-bold">
-                          💡 만약 반응이 없다면, 아래의 기기별 설치법에 따라 홈 화면에 추가부탁드립니다.
-                        </p>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 )}
 
