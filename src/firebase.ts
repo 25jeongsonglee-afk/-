@@ -273,6 +273,9 @@ export function setSimulatedUser(user: SimulatedUser | null) {
 export async function googleSignIn(teacherSecret?: string): Promise<User> {
   const secretClean = (teacherSecret || '').trim().toLowerCase();
   const isTeacherBySecret = secretClean === 'meister';
+  const isPictureBySecret = secretClean === 'picture';
+  const isInterviewBySecret = secretClean === 'interview';
+  const isLibrarianBySecret = secretClean === 'librarian';
 
   if (isFirebaseActive()) {
     try {
@@ -304,6 +307,18 @@ export async function googleSignIn(teacherSecret?: string): Promise<User> {
         role = 'teacher';
         const baseName = fbUser.displayName ? fbUser.displayName.replace(/\s*선생님\s*$/, '').trim() : '교사';
         name = `${baseName}선생님`;
+      } else if (isPictureBySecret) {
+        role = 'picture_student';
+        const baseName = fbUser.displayName ? fbUser.displayName.trim() : '학생';
+        name = `${baseName} (사진/촬영 담당)`;
+      } else if (isInterviewBySecret) {
+        role = 'interview_student';
+        const baseName = fbUser.displayName ? fbUser.displayName.trim() : '학생';
+        name = `${baseName} (인터뷰 담당)`;
+      } else if (isLibrarianBySecret) {
+        role = 'librarian';
+        const baseName = fbUser.displayName ? fbUser.displayName.trim() : '지도교사';
+        name = `${baseName} (지도교사)`;
       } else if (existingProfile) {
         role = existingProfile.role;
         name = existingProfile.name;
@@ -337,6 +352,15 @@ export async function googleSignIn(teacherSecret?: string): Promise<User> {
     if (isTeacherBySecret) {
       role = 'teacher';
       name = '김선생님';
+    } else if (isPictureBySecret) {
+      role = 'picture_student';
+      name = '정송이 (사진/촬영 담당)';
+    } else if (isInterviewBySecret) {
+      role = 'interview_student';
+      name = '정송이 (인터뷰 담당)';
+    } else if (isLibrarianBySecret) {
+      role = 'librarian';
+      name = '정송이 (지도교사)';
     } else {
       role = 'admin';
     }

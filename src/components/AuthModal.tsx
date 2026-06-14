@@ -30,7 +30,7 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
   const [roleInput, setRoleInput] = useState<UserRole>('student');
   
   const [studentNumberInput, setStudentNumberInput] = useState('');
-  const [subTab, setSubTab] = useState<'google' | 'manual'>('manual');
+  const [googleNewspaperSecret, setGoogleNewspaperSecret] = useState('');
   
   const [showConfig, setShowConfig] = useState(false);
   const [configText, setConfigText] = useState('');
@@ -141,7 +141,8 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
     }, 15000);
 
     try {
-      const user = await googleSignIn(googleTeacherSecret);
+      const finalSecret = googleNewspaperSecret.trim() || googleTeacherSecret.trim();
+      const user = await googleSignIn(finalSecret);
       clearTimeout(timeoutId);
       onAuthChange(user);
       setSuccessMsg('구글 계정으로 성공적으로 로그인되었습니다.');
@@ -150,6 +151,7 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
         setIsOpen(false);
         setSuccessMsg('');
         setGoogleTeacherSecret('');
+        setGoogleNewspaperSecret('');
       }, 1000);
     } catch (err: any) {
       clearTimeout(timeoutId);
@@ -228,6 +230,7 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
             setFormStep(1);
             setTeacherSecret('');
             setGoogleTeacherSecret('');
+            setGoogleNewspaperSecret('');
             setNameInput('');
             setEmailInput('');
             setAdminPasswordInput('');
@@ -267,183 +270,66 @@ export default function AuthModal({ onAuthChange, currentUser }: AuthModalProps)
                   <span className="text-[10px] text-[#D9A441] font-mono tracking-widest uppercase font-black font-semibold">DAEGU IL MEISTER</span>
                   <h3 className="text-xl font-extrabold text-slate-800 tracking-tight mt-0.5">월간 사람책 로그인</h3>
                   <p className="text-xs text-slate-500 mt-2">
-                    구글(Google) 계정 혹은 본인의 이메일을 이용하여 간편하게 로그인하세요.
+                    구글(Google) 계정을 이용하여 안전하게 로그인하세요.
                   </p>
-                  <div className="mt-3 text-[10.5px] text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg py-1.5 px-3 inline-block font-semibold">
-                    🗝️ 이메일 간편 연동 및 역할 맞춤형 로그인
+                  <div className="mt-3 text-[10.5px] text-[#1E3A5F] bg-blue-50 border border-blue-100 rounded-lg py-1.5 px-3 inline-block font-semibold">
+                    🗝️ 신문부 전용 & 교직원 전용 구글 통합 로그인
                   </div>
                 </div>
 
-                {errorMsg && (
-                  <div className="mb-4 p-3 bg-rose-50 border-l-4 border-rose-500 text-rose-700 text-xs rounded-r-lg flex items-start gap-2 text-left">
-                    <ShieldAlert className="h-4.5 w-4.5 shrink-0 mt-0.5" />
-                    <span className="font-medium leading-relaxed">{errorMsg}</span>
-                  </div>
-                )}
-
-                {successMsg && (
-                  <div className="mb-4 p-3 bg-emerald-50 border-l-4 border-emerald-500 text-emerald-800 text-xs rounded-r-lg flex items-start gap-2 text-left">
-                    <Check className="h-4.5 w-4.5 shrink-0 mt-0.5" />
-                    <span className="font-medium">{successMsg}</span>
-                  </div>
-                )}
-
-                <div className="space-y-4 py-2 text-left">
-                {/* Tabs to switch between Google Sign-in and Manual Sign-in */}
-                <div className="flex border-b border-slate-200 mb-5">
-                  <button
-                    type="button"
-                    onClick={() => setSubTab('manual')}
-                    className={`flex-1 pb-2.5 text-xs font-bold text-center transition-colors border-b-2 cursor-pointer ${
-                      subTab === 'manual'
-                        ? 'border-[#1E3A5F] text-[#1E3A5F]'
-                        : 'border-transparent text-slate-400 hover:text-slate-600'
-                    }`}
-                  >
-                    📝 간편 자동로그인 (권장)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSubTab('google')}
-                    className={`flex-1 pb-2.5 text-xs font-bold text-center transition-colors border-b-2 cursor-pointer ${
-                      subTab === 'google'
-                        ? 'border-[#1E3A5F] text-[#1E3A5F]'
-                        : 'border-transparent text-slate-400 hover:text-slate-600'
-                    }`}
-                  >
-                    🌐 구글 로그인
-                  </button>
-                </div>
-
-                {subTab === 'manual' ? (
-                  <form onSubmit={handleCustomLogin} className="space-y-3.5 text-left">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-705 mb-1">
-                        👤 성함 및 이름
+                               <div className="space-y-4 py-2 text-left">
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-4">
+                    {/* 신문부 전용 비밀번호 (위에 배치) */}
+                    <div className="space-y-1.5">
+                      <label className="block text-[11px] font-bold text-[#D9A441] flex items-center gap-1">
+                        🔑 신문부 전용 비밀번호 (선택)
                       </label>
                       <input
-                        type="text"
-                        required
-                        value={nameInput}
-                        onChange={(e) => setNameInput(e.target.value)}
-                        placeholder="이름을 입력하세요 (예: 홍길동)"
-                        className="w-full text-xs py-2.5 px-3 bg-white border border-slate-250 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/15 focus:border-[#1E3A5F] transition-all"
+                        type="password"
+                        value={googleNewspaperSecret}
+                        onChange={(e) => setGoogleNewspaperSecret(e.target.value)}
+                        placeholder="신문부 소속 학생(사진/인터뷰/지도교사)인 경우 입력하세요"
+                        className="w-full text-xs py-2.5 px-3 bg-white border border-[#D9A441]/45 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D9A441]/10 focus:border-[#D9A441] transition-all font-mono"
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-slate-705 mb-1">
-                        📧 이메일 주소 및 아이디 (선택)
+                    {/* 교직원 비밀번호 (아래에 배치) */}
+                    <div className="space-y-1.5">
+                      <label className="block text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                        🗝️ 교직원 전용 비밀번호 (선택)
                       </label>
                       <input
-                        type="email"
-                        value={emailInput}
-                        onChange={(e) => setEmailInput(e.target.value)}
-                        placeholder="예: 25jeongsonglee@dgmeister.hs.kr (생략 시 자동 생성)"
+                        type="password"
+                        value={googleTeacherSecret}
+                        onChange={(e) => setGoogleTeacherSecret(e.target.value)}
+                        placeholder="구글 로그인 예정인 선생님이신 경우 입력하세요"
                         className="w-full text-xs py-2.5 px-3 bg-white border border-slate-250 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/15 focus:border-[#1E3A5F] transition-all font-mono"
                       />
                     </div>
 
-                    {emailInput.trim().toLowerCase() === '25jeongsonglee@dgmeister.hs.kr' && (
-                      <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl space-y-1.5 label-transition">
-                        <label className="block text-xs font-bold text-rose-900 mb-1">
-                          👑 대표관리자 비밀번호
-                        </label>
-                        <input
-                          type="password"
-                          required
-                          value={adminPasswordInput}
-                          onChange={(e) => setAdminPasswordInput(e.target.value)}
-                          placeholder="대표관리자 전용 비밀번호를 입력하십시오"
-                          className="w-full text-xs py-2.5 px-3 bg-white border border-rose-250 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-[#1E3A5F]/15 focus:border-rose-500 transition-all font-mono"
-                        />
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-705 mb-1">
-                          🏫 학번 (학생일 경우)
-                        </label>
-                        <input
-                          type="text"
-                          maxLength={4}
-                          value={studentNumberInput}
-                          onChange={(e) => setStudentNumberInput(e.target.value.replace(/[^0-9]/g, ''))}
-                          placeholder="예: 2101 (2학년 1반 1번)"
-                          className="w-full text-xs py-2.5 px-3 bg-white border border-slate-250 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/15 focus:border-[#1E3A5F] transition-all font-mono"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-[#D9A441] mb-1">
-                          🔑 신문부 전용 비밀번호
-                        </label>
-                        <input
-                          type="password"
-                          value={teacherSecret}
-                          onChange={(e) => setTeacherSecret(e.target.value)}
-                          placeholder="미인증 시 '일반 학생' 로그인"
-                          className="w-full text-xs py-2.5 px-3 bg-white border border-[#D9A441]/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D9A441]/15 focus:border-[#D9A441] transition-all font-mono"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1 text-[10.5px] text-slate-600 leading-normal">
-                      <div className="font-bold text-[#1E3A5F] mb-1">💡 신문부/교직원 비밀번호 안내</div>
-                      <div>• 비밀번호 <b>미기입</b> 시: <span className="text-[#1E3A5F] font-bold">일반 학생</span>으로 로그인</div>
-                      <div>• <b>meister</b> 입력 시: <span className="text-blue-700 font-bold">선생님</span>으로 로그인</div>
-                      <div>• <b>picture</b> 입력 시: <span className="text-emerald-700 font-bold">사진/촬영 담당 학생</span>으로 로그인</div>
-                      <div>• <b>interview</b> 입력 시: <span className="text-purple-700 font-bold">인터뷰 담당 학생</span>으로 로그인</div>
-                      <div>• <b>librarian</b> 입력 시: <span className="text-amber-700 font-bold">지도 교사</span>로 로그인</div>
+                    <div className="p-3 bg-white rounded-xl border border-slate-200 text-center text-[10.5px] text-slate-500 leading-normal font-medium">
+                      💡 선생님이나 신문부이면 지정된 비번을 입력 시 권한이 지급됩니다.
                     </div>
 
                     <button
-                      type="submit"
+                      onClick={handleGoogleLogin}
                       disabled={loading}
-                      className="w-full py-3 px-4 bg-[#1E3A5F] hover:bg-[#132742] text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
+                      className="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-3 shadow-md cursor-pointer disabled:opacity-50 border border-slate-700 font-sans"
+                      id="btn-google-auth"
                     >
-                      <UserIcon className="h-4 w-4 text-[#D9A441]" />
-                      <span>{loading ? '로그인 중...' : '프로필 맞춤 로그인 완료'}</span>
+                      <svg className="w-4.5 h-4.5 shrink-0" viewBox="0 0 24 24" width="100%" height="100%">
+                        <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.47 15.01 0 12 0 7.35 0 3.32 2.67 1.33 6.56l3.86 3C6.12 7.02 8.85 5.04 12 5.04z" />
+                        <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.35H12v4.51h6.48c-.28 1.47-1.11 2.71-2.35 3.55l3.64 2.83c2.13-1.97 3.72-4.87 3.72-8.54z" />
+                        <path fill="#FBBC05" d="M5.19 14.56c-.24-.72-.38-1.5-.38-2.31s.14-1.59.38-2.31L1.33 6.94C.48 8.62 0 10.5 0 12.5s.48 3.88 1.33 5.56l3.86-3z" />
+                        <path fill="#34A853" d="M12 18.96c-3.15 0-5.88-1.98-6.81-4.92l-3.86 3C3.32 21.13 7.35 24 12 24c3.24 0 5.95-1.08 7.93-2.91l-3.64-2.83c-1.11.75-2.52 1.3-4.29 1.3z" />
+                      </svg>
+                      <span>{loading ? '인증 처리하는 중...' : 'Google 계정으로 로그인'}</span>
                     </button>
-                  </form>
-                ) : (
-                  <div className="space-y-4 py-2 text-left">
-                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-                      <div className="space-y-1.5">
-                        <label className="block text-[11px] font-bold text-slate-600 flex items-center gap-1">
-                          🗝️ 선택비밀번호 (교직원 구글 로그인 전용)
-                        </label>
-                        <input
-                          type="password"
-                          value={googleTeacherSecret}
-                          onChange={(e) => setGoogleTeacherSecret(e.target.value)}
-                          placeholder="구글 로그인 예정인 선생님이신 경우 기입하세요"
-                          className="w-full text-xs py-2.5 px-3 bg-white border border-slate-250 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]/15 focus:border-[#1E3A5F] transition-all font-mono"
-                        />
-                      </div>
-
-                      <button
-                        onClick={handleGoogleLogin}
-                        disabled={loading}
-                        className="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-3 shadow-md cursor-pointer disabled:opacity-50 border border-slate-700 font-sans"
-                        id="btn-google-auth"
-                      >
-                        <svg className="w-4.5 h-4.5 shrink-0" viewBox="0 0 24 24" width="100%" height="100%">
-                          <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.47 15.01 0 12 0 7.35 0 3.32 2.67 1.33 6.56l3.86 3C6.12 7.02 8.85 5.04 12 5.04z" />
-                          <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.35H12v4.51h6.48c-.28 1.47-1.11 2.71-2.35 3.55l3.64 2.83c2.13-1.97 3.72-4.87 3.72-8.54z" />
-                          <path fill="#FBBC05" d="M5.19 14.56c-.24-.72-.38-1.5-.38-2.31s.14-1.59.38-2.31L1.33 6.94C.48 8.62 0 10.5 0 12.5s.48 3.88 1.33 5.56l3.86-3z" />
-                          <path fill="#34A853" d="M12 18.96c-3.15 0-5.88-1.98-6.81-4.92l-3.86 3C3.32 21.13 7.35 24 12 24c3.24 0 5.95-1.08 7.93-2.91l-3.64-2.83c-1.11.75-2.52 1.3-4.29 1.3z" />
-                        </svg>
-                        <span>{loading ? '인증 처리하는 중...' : 'Google 계정으로 로그인'}</span>
-                      </button>
-                    </div>
-
-                    <p className="text-[10.5px] text-center text-slate-500 mt-2 leading-relaxed">
-                      ✓ 대구일마이스터고 구글 워크스페이스 계정 자동 연동
-                    </p>
                   </div>
-                )}
+
+                  <p className="text-[10.5px] text-center text-slate-500 mt-2 leading-relaxed">
+                    ✓ 대구일마이스터고 구글 워크스페이스 계정 자동 연동
+                  </p>
                 </div>
 
                 {/* Developer Firebase Section */}
