@@ -65,3 +65,14 @@ export interface NewspaperComment {
   content: string; // 댓글 내용
   createdAt: string;
 }
+
+export interface Compliment {
+  id: string;
+  senderName: string;      // 보낸이 이름 (예: 김배성)
+  senderRole: 'student' | 'teacher';  // 구분 ('student' | 'teacher')
+  senderDept: string;      // 보낸이 소속/반 (예: "3학년 1반" 또는 "정보기술과")
+  receiverName: string;    // 칭찬 대상자 (예: 박민유 선생님)
+  receiverDept: string;    // 대상자 소속/반 (예: "2학년 3반" 또는 "컴퓨터부")
+  content: string;         // 칭찬 내용
+  createdAt: string;       // 작성일
+}

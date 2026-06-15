@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { User, Newspaper, InterviewReservation, Inquiry, Notice } from './types';
+import React, { useState, useEffect, useRef } from 'react';
+import { User, Newspaper, InterviewReservation, Inquiry, Notice, Compliment } from './types';
 import { 
-  getNewspapers, getReservations, getInquiries, getNotices, 
+  getNewspapers, getReservations, getInquiries, getNotices, getCompliments,
   currentSimulatedUser, deleteNotice
 } from './firebase';
 import AuthModal from './components/AuthModal';
@@ -9,6 +9,7 @@ import Calendar from './components/Calendar';
 import NewspaperView from './components/NewspaperView';
 import InterviewRequest from './components/InterviewRequest';
 import InquiryView from './components/InquiryView';
+import ComplimentView from './components/ComplimentView';
 import NoticeWriteView from './components/NoticeWriteView';
 import AdminPanel from './components/AdminPanel';
 import meisterLogo from './assets/images/meister_logo_1781278274851.jpg';
@@ -29,10 +30,11 @@ export default function App() {
   const [reservations, setReservations] = useState<InterviewReservation[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
+  const [compliments, setCompliments] = useState<Compliment[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'home' | 'intro' | 'newspapers' | 'interviews' | 'inquiries' | 'notices' | 'admin'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'intro' | 'newspapers' | 'interviews' | 'inquiries' | 'compliments' | 'notices' | 'admin'>('home');
   const [selectedPaperId, setSelectedPaperId] = useState<string | null>(null);
 
   // PWA (Progressive Web App) Installation States & Trigger Hooks
@@ -44,6 +46,10 @@ export default function App() {
   const [isInAppBrowser, setIsInAppBrowser] = useState(false);
   const [copied, setCopied] = useState(false);
   const [highlightSteps, setHighlightSteps] = useState(false);
+
+  // New States for smart installation booster
+  const [installPendingStatus, setInstallPendingStatus] = useState<'idle' | 'waiting' | 'success' | 'failed'>('idle');
+  const waitingTriggerRef = useRef({ triggered: false });
 
   useEffect(() => {
     setIsInIframe(window.self !== window.top);
@@ -59,6 +65,20 @@ export default function App() {
       // Store the event so it can be manually called
       setDeferredPrompt(e);
       setIsInstallable(true);
+
+      // Smart Installation Booster logic!
+      // If the user already clicked "Install" and is waiting for this exact event, prompt immediately!
+      if (waitingTriggerRef.current.triggered) {
+        setInstallPendingStatus('success');
+        (e as any).prompt();
+        (e as any).userChoice.then((choiceResult: any) => {
+          console.log(`User install outcome (delayed): ${choiceResult.outcome}`);
+          setDeferredPrompt(null);
+          setIsInstallable(false);
+          setInstallPendingStatus('idle');
+          waitingTriggerRef.current.triggered = false;
+        });
+      }
     };
 
     const handleAppInstalled = () => {
@@ -66,6 +86,8 @@ export default function App() {
       setIsInstallable(false);
       setIsInstalled(true);
       setShowInstallModal(false);
+      setInstallPendingStatus('idle');
+      waitingTriggerRef.current.triggered = false;
       console.log("월간 사람책 PWA 앱이 정상적으로 설치되었습니다.");
     };
 
@@ -88,16 +110,45 @@ export default function App() {
 
   const handleInstallApp = async () => {
     if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log(`User install request choice outcome: ${outcome}`);
-      setDeferredPrompt(null);
-      setIsInstallable(false);
-    } else {
-      // If there's no deferredPrompt (such as iOS Safari or nested app browser or inside iframe), always prompt our custom visual install dialog
+      try {
+        setInstallPendingStatus('success');
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User install request choice outcome: ${outcome}`);
+        setDeferredPrompt(null);
+        setIsInstallable(false);
+        setInstallPendingStatus('idle');
+      } catch (err) {
+        console.error("Direct installation error:", err);
+        setInstallPendingStatus('failed');
+      }
+    } else if (isInIframe) {
+      // If we are inside an iframe, prompt the custom visual install dialog to redirect out of iframe
       setShowInstallModal(true);
       setHighlightSteps(true);
       setTimeout(() => setHighlightSteps(false), 3000);
+    } else if (isInAppBrowser) {
+      // If inside kakao/naver webview, show instructions to go to native browser
+      setShowInstallModal(true);
+    } else {
+      // SMART BOOSTER AGENT:
+      // If we are in a normal browser (Desktop Chrome, Mobile Chrome, Samsung Internet, etc.)
+      // but beforeinstallprompt hasn't fired yet, do a smart background check.
+      // Ask user to wait 2.5s while we force/wait register and listen
+      setInstallPendingStatus('waiting');
+      waitingTriggerRef.current.triggered = true;
+
+      // After 2.5s, if it still hasn't fired, fallback to manual instruction modal
+      setTimeout(() => {
+        if (waitingTriggerRef.current.triggered && !deferredPrompt) {
+          setInstallPendingStatus('failed');
+          waitingTriggerRef.current.triggered = false;
+          // Fallback to beautiful guide modal so they can manually install via browser native menu if they are on unsupported browsers (like iOS Safari)
+          setShowInstallModal(true);
+          setHighlightSteps(true);
+          setTimeout(() => setHighlightSteps(false), 3000);
+        }
+      }, 2500);
     }
   };
 
@@ -111,16 +162,18 @@ export default function App() {
   // Load all data on mount
   const loadAllData = async () => {
     try {
-      const [papersData, resData, inqData, noticesData] = await Promise.all([
+      const [papersData, resData, inqData, noticesData, complimentsData] = await Promise.all([
         getNewspapers(),
         getReservations(),
         getInquiries(),
-        getNotices()
+        getNotices(),
+        getCompliments()
       ]);
       setNewspapers(papersData);
       setReservations(resData);
       setInquiries(inqData);
       setNotices(noticesData);
+      setCompliments(complimentsData);
     } catch (e) {
       console.error("Could not load database records:", e);
     } finally {
@@ -193,6 +246,7 @@ export default function App() {
                 { id: 'newspapers', label: '대구일마이스터고 신문' },
                 { id: 'interviews', label: '인터뷰 신청 및 일정' },
                 { id: 'inquiries', label: '문의하기' },
+                { id: 'compliments', label: '칭찬릴레이 🌸' },
                 ...(currentUser?.role === 'admin' || currentUser?.role === 'librarian' ? [{ id: 'notices', label: '소식/공지 등록 📢' }] : [])
               ].map((tab) => (
                 <button
@@ -278,6 +332,7 @@ export default function App() {
                   { id: 'newspapers', label: '대구일마이스터고 신문' },
                   { id: 'interviews', label: '인터뷰 신청 및 일정' },
                   { id: 'inquiries', label: '문의하기' },
+                  { id: 'compliments', label: '칭찬릴레이 🌸' },
                   ...(currentUser?.role === 'admin' || currentUser?.role === 'librarian' ? [{ id: 'notices', label: '소식/공지 등록 📢' }] : [])
                 ].map((tab) => (
                   <button
@@ -621,7 +676,7 @@ export default function App() {
                     {[
                       { roleName: '대표학생', name: '정송이 (2학년)', desc: '월간 사람책 총괄', img: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=300', icon: GraduationCap },
                       { roleName: '인터뷰 담당 학생', name: '김민준 (2학년), 남희준, 서정재 (1학년)', desc: '학우 동아리 활동, 대회 현장 취재 및 실시간 제보문 작성', img: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&q=80&w=300', icon: Users },
-                      { roleName: '사진/촬영 담당 학생', name: '구대근 (2학년), 박민유 (1학년)', desc: '인터뷰 사진, 교내 행사사진 등 촬영 담당', img: 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=300', icon: Camera },
+                      { roleName: '사진/촬영 담당 학생', name: '구대근 (2학년), 배성준, 박민유 (1학년)', desc: '인터뷰 사진, 교내 행사사진 등 촬영 담당', img: 'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&q=80&w=300', icon: Camera },
                       { roleName: '지도교사', name: '전은경 선생님 (도서관 사서 선생님)', desc: '사람책 플랫폼 관리 및 인프라 신규 공지 조율 총책', img: 'https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?auto=format&fit=crop&q=80&w=300', icon: Shield }
                     ].map((crew, id) => (
                       <div key={id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-lg transition-all flex flex-col justify-between">
@@ -656,7 +711,7 @@ export default function App() {
                         대구일마이스터고 본관 2층 도서관
                       </p>
                     </div>
-                    <span className="text-[10px] text-slate-400 font-bold mt-4 tracking-wider">주관: 대구일마이스터고 편집국</span>
+                    <span className="text-[10px] text-slate-400 font-bold mt-4 tracking-wider">주관: 대구일마이스터고 신문부</span>
                   </div>
                 </div>
 
@@ -710,6 +765,24 @@ export default function App() {
                     onOpenLogin={handleOpenLogin}
                   />
                 </div>
+              </motion.div>
+            )}
+
+            {/* VIEW B-2: COMPLIMENTS SUBMISSION BOARD */}
+            {activeTab === 'compliments' && (
+              <motion.div
+                key="compliments-screen"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="space-y-6"
+              >
+                <ComplimentView 
+                  currentUser={currentUser} 
+                  compliments={compliments} 
+                  onRefresh={loadAllData} 
+                  onOpenLogin={handleOpenLogin}
+                />
               </motion.div>
             )}
 
@@ -800,6 +873,45 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* SMART PWA BOOSTER WAITING MODAL */}
+      <AnimatePresence>
+        {installPendingStatus === 'waiting' && (
+          <div className="fixed inset-0 z-150 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-950/85 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl p-6 max-w-sm w-full text-center space-y-5 border border-slate-200 relative z-10 shadow-2xl"
+            >
+              <div className="mx-auto h-16 w-16 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-200">
+                <Sparkles className="h-8 w-8 text-amber-500 animate-spin" style={{ animationDuration: '3s' }} />
+              </div>
+              <div className="space-y-2">
+                <h4 className="text-sm font-black text-slate-900">바탕화면 자동 설치 엔진 연결 중...</h4>
+                <p className="text-[11.5px] text-slate-600 leading-relaxed font-semibold">
+                  어플리케이션 보안 설치 프로토콜을 준비 중입니다.<br />
+                  <strong>1~2초 후 화면에 즉시 설치 창이 팝업됩니다.</strong> 잠시만 기다려주세요!
+                </p>
+              </div>
+              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <motion.div 
+                  initial={{ width: '0%' }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 2.2, ease: 'easeOut' }}
+                  className="h-full bg-amber-500 rounded-full"
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* PWA CUSTOM INSTALLATION SERVICE ASSIST MODAL */}
       <AnimatePresence>

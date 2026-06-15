@@ -337,7 +337,7 @@ export default function InterviewRequest({ currentUser, reservations, onRefresh,
         {/* Informative Tip */}
         <div className="bg-white border border-slate-200/80 rounded-xl p-3.5 text-[10px] text-slate-500 mt-4">
           <HelpCircle className="h-4.5 w-4.5 text-[#D9A441] inline-block mr-1.5 shrink-0 align-sub" />
-          <span>신청하신 인터뷰 승인이 거절된 경우 취재 요건 미충족 또는 희망 날짜 중복 때문일 수 있습니다. 방송부로 오시면 언제든지 세부 일정 변경이 조율 가능합니다.</span>
+          <span>신청하신 인터뷰 승인이 거절된 경우 취재 요건 미충족 또는 희망 날짜 중복 때문일 수 있습니다. 도서관으로 오시면 언제든지 세부 일정 변경이 조율 가능합니다.</span>
         </div>
       </div>
     </div>

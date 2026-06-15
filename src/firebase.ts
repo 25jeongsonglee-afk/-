@@ -8,7 +8,7 @@ import {
   updateDoc, deleteDoc, addDoc, onSnapshot, getDocFromServer, FirestoreError
 } from 'firebase/firestore';
 import firebaseConfig from './firebase-applet-config.json';
-import { User, UserRole, InterviewReservation, Newspaper, Inquiry, Notice, NewspaperComment } from './types';
+import { User, UserRole, InterviewReservation, Newspaper, Inquiry, Notice, NewspaperComment, Compliment } from './types';
 
 // Check if Firebase is using custom/real config or placeholders
 const getActiveConfig = () => {
@@ -931,6 +931,84 @@ export async function deleteNewspaperComment(id: string): Promise<void> {
     const list = getLocalData<NewspaperComment>('newspaper_comments', INITIAL_COMMENTS);
     const updated = list.filter((c) => c.id !== id);
     setLocalData('newspaper_comments', updated);
+  }
+}
+
+// 7. COMPLIMENTS SERVICES
+const INITIAL_COMPLIMENTS: Compliment[] = [
+  {
+    id: 'comp1',
+    senderName: '이수성',
+    senderRole: 'student',
+    senderDept: '3학년 스마트팩토리과',
+    receiverName: '김민지 선생님',
+    receiverDept: '도서관 정보부',
+    content: '매월 발행되는 사람책 신문과 도서관 행사를 늘 밝은 모습으로 준비하고 이끌어주시는 김민지 선생님을 칭찬합니다! 덕분에 책과 친해지게 되었어요.',
+    createdAt: '2026-06-13T10:15:00Z'
+  },
+  {
+    id: 'comp2',
+    senderName: '홍길동 선생님',
+    senderRole: 'teacher',
+    senderDept: '수학교육실',
+    receiverName: '배성준',
+    receiverDept: '2학년 전기전자제어과',
+    content: '신문 사진/촬영 동아리에서 책임감을 가지고 늘 조용히 솔선수범하며 성실한 태도로 취재 촬영을 완벽하게 마치는 배성준 학생을 칭찬의 첫 주자로 강력 추천합니다.',
+    createdAt: '2026-06-14T02:30:00Z'
+  }
+];
+
+export async function getCompliments(): Promise<Compliment[]> {
+  if (isFirebaseActive()) {
+    try {
+      const q = collection(db, 'compliments');
+      const querySnapshot = await getDocs(q);
+      const items: Compliment[] = [];
+      querySnapshot.forEach((docSnap) => {
+        items.push(docSnap.data() as Compliment);
+      });
+      return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } catch (error) {
+      return handleFirestoreError(error, OperationType.LIST, 'compliments');
+    }
+  } else {
+    return getLocalData<Compliment>('compliments', INITIAL_COMPLIMENTS);
+  }
+}
+
+export async function addCompliment(compliment: Omit<Compliment, 'id' | 'createdAt'>): Promise<Compliment> {
+  const newComp: Compliment = {
+    ...compliment,
+    id: `comp-${Date.now()}`,
+    createdAt: new Date().toISOString()
+  };
+
+  if (isFirebaseActive()) {
+    try {
+      await setDoc(doc(db, 'compliments', newComp.id), newComp);
+      return newComp;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `compliments/${newComp.id}`);
+    }
+  } else {
+    const list = getLocalData<Compliment>('compliments', INITIAL_COMPLIMENTS);
+    list.unshift(newComp);
+    setLocalData('compliments', list);
+    return newComp;
+  }
+}
+
+export async function deleteCompliment(id: string): Promise<void> {
+  if (isFirebaseActive()) {
+    try {
+      await deleteDoc(doc(db, 'compliments', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `compliments/${id}`);
+    }
+  } else {
+    const list = getLocalData<Compliment>('compliments', INITIAL_COMPLIMENTS);
+    const updated = list.filter(c => c.id !== id);
+    setLocalData('compliments', updated);
   }
 }
 
