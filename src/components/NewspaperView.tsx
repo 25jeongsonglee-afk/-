@@ -256,6 +256,53 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
     setUploadSlots(uploadSlots.map((slot, i) => i === index ? { ...slot, ...fields } : slot));
   };
 
+  const compressImageBase64 = (base64Str: string, maxWidth = 1200, maxHeight = 1600, quality = 0.55): Promise<string> => {
+    return new Promise((resolve) => {
+      if (!base64Str.startsWith('data:image/')) {
+        resolve(base64Str);
+        return;
+      }
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(base64Str);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+
+      img.onerror = () => {
+        resolve(base64Str);
+      };
+
+      img.src = base64Str;
+    });
+  };
+
   const handleSlotFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -271,19 +318,30 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
     setUploadError('');
 
     filesToRead.forEach((file) => {
-      if (file.size > 6 * 1024 * 1024) {
-        alert(`용량이 6MB를 초과하는 파일은 처리되지 않습니다: ${file.name} (현재: ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`용량이 10MB를 초과하는 파일은 처리되지 않습니다: ${file.name} (현재: ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
         return;
       }
 
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.onload = async () => {
         if (typeof reader.result === 'string') {
+          const rawBase64 = reader.result;
+          let finalBase64 = rawBase64;
+          
+          if (rawBase64.startsWith('data:image/')) {
+            try {
+              finalBase64 = await compressImageBase64(rawBase64, 1200, 1600, 0.55);
+            } catch (err) {
+              console.error('Image compression failed, using original base64:', err);
+            }
+          }
+
           setUploadSlots(prevSlots => prevSlots.map((slot, sIdx) => {
             if (sIdx === index) {
               return {
                 ...slot,
-                files: [...slot.files, { fileBase64: reader.result as string, fileName: file.name }]
+                files: [...slot.files, { fileBase64: finalBase64, fileName: file.name }]
               };
             }
             return slot;

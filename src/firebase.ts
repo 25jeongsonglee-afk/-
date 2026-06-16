@@ -622,6 +622,8 @@ export async function userLogout(): Promise<void> {
 
 // 2. NEWSPAPER ARCHIVE SERVICES
 export async function getNewspapers(): Promise<Newspaper[]> {
+  const localList = getLocalData<Newspaper>('newspapers', INITIAL_NEWSPAPERS);
+
   if (isFirebaseActive()) {
     try {
       const q = collection(db, 'newspapers');
@@ -630,13 +632,21 @@ export async function getNewspapers(): Promise<Newspaper[]> {
       querySnapshot.forEach((docSnap) => {
         items.push(docSnap.data() as Newspaper);
       });
-      return items.sort((a, b) => b.year * 100 + b.month - (a.year * 100 + a.month));
+      const sorted = items.sort((a, b) => b.year * 100 + b.month - (a.year * 100 + a.month));
+      
+      // Sync local cache with Firestore data. Merge any locally added items to prevent data disappearing on sync resets.
+      const firestoreIds = new Set(sorted.map(p => p.id));
+      const localUnsynced = localList.filter(p => !firestoreIds.has(p.id) && p.id.startsWith('paper-'));
+      
+      const merged = [...sorted, ...localUnsynced].sort((a, b) => b.year * 100 + b.month - (a.year * 100 + a.month));
+      setLocalData('newspapers', merged);
+      return merged;
     } catch (error) {
-      return handleFirestoreError(error, OperationType.LIST, 'newspapers');
+      console.warn("Could not fetch newspapers from Firestore, returning local cache fallback:", error);
+      return localList.sort((a, b) => b.year * 100 + b.month - (a.year * 100 + a.month));
     }
   } else {
-    const list = getLocalData<Newspaper>('newspapers', INITIAL_NEWSPAPERS);
-    return list.sort((a, b) => b.year * 100 + b.month - (a.year * 100 + a.month));
+    return localList.sort((a, b) => b.year * 100 + b.month - (a.year * 100 + a.month));
   }
 }
 
@@ -647,32 +657,34 @@ export async function addNewspaper(newspaper: Omit<Newspaper, 'id' | 'createdAt'
     createdAt: new Date().toISOString()
   };
 
+  // Always write immediately to local storage cache to keep local edits persistent
+  const list = getLocalData<Newspaper>('newspapers', INITIAL_NEWSPAPERS);
+  list.unshift(newPaper);
+  setLocalData('newspapers', list);
+
   if (isFirebaseActive()) {
     try {
       await setDoc(doc(db, 'newspapers', newPaper.id), newPaper);
-      return newPaper;
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `newspapers/${newPaper.id}`);
+      console.warn("Could not save newspaper to Firestore cloud, but it was safely cached locally:", error);
     }
-  } else {
-    const list = getLocalData<Newspaper>('newspapers', INITIAL_NEWSPAPERS);
-    list.unshift(newPaper);
-    setLocalData('newspapers', list);
-    return newPaper;
   }
+
+  return newPaper;
 }
 
 export async function deleteNewspaper(id: string): Promise<void> {
+  // Always update the local cache immediately to prevent deleted items from persisting offline
+  const list = getLocalData<Newspaper>('newspapers', INITIAL_NEWSPAPERS);
+  const updated = list.filter(p => p.id !== id);
+  setLocalData('newspapers', updated);
+
   if (isFirebaseActive()) {
     try {
       await deleteDoc(doc(db, 'newspapers', id));
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `newspapers/${id}`);
+      console.warn("Could not delete newspaper from Firestore cloud, but it was removed locally:", error);
     }
-  } else {
-    const list = getLocalData<Newspaper>('newspapers', INITIAL_NEWSPAPERS);
-    const updated = list.filter(p => p.id !== id);
-    setLocalData('newspapers', updated);
   }
 }
 
@@ -820,6 +832,8 @@ export async function updateInquiryAnswer(id: string, answer: string, status: 'a
 
 // 5. NOTICES SERVICES
 export async function getNotices(): Promise<Notice[]> {
+  const localList = getLocalData<Notice>('notices', INITIAL_NOTICES);
+
   if (isFirebaseActive()) {
     try {
       const q = collection(db, 'notices');
@@ -828,12 +842,20 @@ export async function getNotices(): Promise<Notice[]> {
       querySnapshot.forEach((docSnap) => {
         items.push(docSnap.data() as Notice);
       });
-      return items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const sorted = items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      const firestoreIds = new Set(sorted.map(n => n.id));
+      const localUnsynced = localList.filter(n => !firestoreIds.has(n.id) && n.id.startsWith('notice-'));
+      
+      const merged = [...sorted, ...localUnsynced].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setLocalData('notices', merged);
+      return merged;
     } catch (error) {
-      return handleFirestoreError(error, OperationType.LIST, 'notices');
+      console.warn("Could not fetch notices from Firestore, using local cache backup:", error);
+      return localList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
   } else {
-    return getLocalData<Notice>('notices', INITIAL_NOTICES);
+    return localList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 }
 
@@ -844,32 +866,32 @@ export async function addNotice(notice: Omit<Notice, 'id' | 'createdAt'>): Promi
     createdAt: new Date().toISOString()
   };
 
+  const list = getLocalData<Notice>('notices', INITIAL_NOTICES);
+  list.unshift(newNotice);
+  setLocalData('notices', list);
+
   if (isFirebaseActive()) {
     try {
       await setDoc(doc(db, 'notices', newNotice.id), newNotice);
-      return newNotice;
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `notices/${newNotice.id}`);
+      console.warn("Could not save notice to Firestore, but saved backup locally:", error);
     }
-  } else {
-    const list = getLocalData<Notice>('notices', INITIAL_NOTICES);
-    list.unshift(newNotice);
-    setLocalData('notices', list);
-    return newNotice;
   }
+
+  return newNotice;
 }
 
 export async function deleteNotice(id: string): Promise<void> {
+  const list = getLocalData<Notice>('notices', INITIAL_NOTICES);
+  const updated = list.filter(n => n.id !== id);
+  setLocalData('notices', updated);
+
   if (isFirebaseActive()) {
     try {
       await deleteDoc(doc(db, 'notices', id));
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `notices/${id}`);
+      console.warn("Could not delete notice from Firestore, but removed locally:", error);
     }
-  } else {
-    const list = getLocalData<Notice>('notices', INITIAL_NOTICES);
-    const updated = list.filter(n => n.id !== id);
-    setLocalData('notices', updated);
   }
 }
 
