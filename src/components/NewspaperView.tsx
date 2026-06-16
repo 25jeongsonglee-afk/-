@@ -18,13 +18,19 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
   const [selectedYear, setSelectedYear] = useState<number | 'all'>('all');
   const [isAdding, setIsAdding] = useState(false);
   
-  // Add state forms
-  const [title, setTitle] = useState('');
-  const [year, setYear] = useState(2026);
-  const [month, setMonth] = useState(6);
-  const [fileType, setFileType] = useState<'pdf' | 'image'>('pdf');
-  const [fileBase64, setFileBase64] = useState<string>('');
-  const [fileName, setFileName] = useState('');
+  // Add state forms (supports multiple files up to 3 slots)
+  interface UploadSlot {
+    title: string;
+    year: number;
+    month: number;
+    fileType: 'pdf' | 'image';
+    fileBase64: string;
+    fileName: string;
+  }
+
+  const [uploadSlots, setUploadSlots] = useState<UploadSlot[]>([
+    { title: '', year: 2026, month: 6, fileType: 'pdf', fileBase64: '', fileName: '' }
+  ]);
   const [uploadError, setUploadError] = useState('');
   const [downloadGuidePaper, setDownloadGuidePaper] = useState<Newspaper | null>(null);
 
@@ -202,58 +208,103 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
     }
   };
 
-  // Handle local file readings and conversions to Base64
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Functions to manage multiple upload slots (up to 3)
+  const addUploadSlot = () => {
+    if (uploadSlots.length >= 3) {
+      alert('한 번에 최대 3개까지만 업로드할 수 있습니다.');
+      return;
+    }
+    const lastSlot = uploadSlots[uploadSlots.length - 1];
+    setUploadSlots([
+      ...uploadSlots,
+      {
+        title: '',
+        year: lastSlot?.year || 2026,
+        month: Math.min(12, (lastSlot?.month || 6) + 1),
+        fileType: 'pdf',
+        fileBase64: '',
+        fileName: ''
+      }
+    ]);
+  };
+
+  const removeUploadSlot = (idx: number) => {
+    if (uploadSlots.length <= 1) return;
+    setUploadSlots(uploadSlots.filter((_, i) => i !== idx));
+  };
+
+  const updateSlot = (index: number, fields: Partial<UploadSlot>) => {
+    setUploadSlots(uploadSlots.map((slot, i) => i === index ? { ...slot, ...fields } : slot));
+  };
+
+  const handleSlotFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      setUploadError('데모 저장을 위해 2MB 이내의 파일만 업로드할 수 있습니다.');
+    if (file.size > 6 * 1024 * 1024) {
+      alert(`파일 용량이 너무 큽니다. 6MB 이하의 파일만 업로드할 수 있습니다. (현재: ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
       return;
     }
 
     setUploadError('');
-    setFileName(file.name);
-
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
-        setFileBase64(reader.result);
+        updateSlot(index, {
+          fileBase64: reader.result,
+          fileName: file.name
+        });
       }
     };
     reader.readAsDataURL(file);
   };
 
-  const handleURLFallback = () => {
-    // Fill realistic mock placeholder URL safely
+  const handleSlotURLFallback = (index: number) => {
     const randomSeed = Math.floor(Math.random() * 1000);
     const mockPic = `https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800&sig=${randomSeed}`;
-    setFileBase64(mockPic);
-    setFileName(`meister_paper_gen_${month}월호.pdf`);
-    setUploadError('데모 이미지 템플릿 주소가 자동 생성되어 적용되었습니다.');
+    const slot = uploadSlots[index];
+    updateSlot(index, {
+      fileBase64: mockPic,
+      fileName: `meister_paper_gen_${slot.month}월호.pdf`
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    
+    // Validations: each slot requires a title and a file
+    for (let i = 0; i < uploadSlots.length; i++) {
+      const slot = uploadSlots[i];
+      if (!slot.title.trim()) {
+        alert(`물별 신문 ${i + 1}의 제목을 기입해주세요.`);
+        return;
+      }
+      if (!slot.fileBase64) {
+        alert(`물별 신문 ${i + 1}의 신문 문서를 업로드하거나 데모 템플릿 소스를 자동 배치 해주어야 합니다.`);
+        return;
+      }
+    }
 
     try {
-      await addNewspaper({
-        title: title.trim(),
-        year,
-        month,
-        fileType,
-        fileName: fileName || `meister_paper_${year}_${month}.pdf`,
-        fileDataUrl: fileBase64 || 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&q=80&w=800'
-      });
+      for (const slot of uploadSlots) {
+        await addNewspaper({
+          title: slot.title.trim(),
+          year: slot.year,
+          month: slot.month,
+          fileType: slot.fileType,
+          fileName: slot.fileName || `meister_paper_${slot.year}_${slot.month}.pdf`,
+          fileDataUrl: slot.fileBase64
+        });
+      }
       // reset
-      setTitle('');
-      setFileBase64('');
-      setFileName('');
+      setUploadSlots([
+        { title: '', year: 2026, month: 6, fileType: 'pdf', fileBase64: '', fileName: '' }
+      ]);
       setIsAdding(false);
       onRefresh();
     } catch (err) {
       console.error(err);
+      alert('신문 등록 처리 중 에러가 발생했습니다.');
     }
   };
 
@@ -345,135 +396,175 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <form onSubmit={handleSubmit} className="bg-[#1E3A5F]/5 border-2 border-dashed border-[#1E3A5F]/20 rounded-2xl p-6 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-200/60 pb-3 mb-2">
+            <form onSubmit={handleSubmit} className="bg-[#1E3A5F]/5 border-2 border-dashed border-[#1E3A5F]/20 rounded-2xl p-6 space-y-6">
+              <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5 text-[#1E3A5F]" />
-                  <h4 className="text-sm font-bold text-[#1E3A5F]">관리자 - 신규 월별 신문 보관소 추가</h4>
+                  <h4 className="text-sm font-bold text-[#1E3A5F]">관리자 - 신규 월별 신문 보관소 추가 (최대 3개 동시 게시 가능)</h4>
                 </div>
-                <span className="text-[10px] text-[#D9A441] font-bold">ADMIN CONSOLE</span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">발행 신문 제목</label>
-                  <input
-                    type="text"
-                    required
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="예: 대구일마이스터고 신문 2026년 6월호"
-                    className="w-full text-xs py-2.5 px-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-[#1E3A5F]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">발행 연도 / 월 선택</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <select
-                      value={year}
-                      onChange={(e) => setYear(Number(e.target.value))}
-                      className="text-xs bg-white border border-slate-200 py-2 px-3 rounded-xl focus:outline-none"
-                    >
-                      <option value={2026}>2026년</option>
-                      <option value={2025}>2025년</option>
-                      <option value={2024}>2024년</option>
-                    </select>
-
-                    <select
-                      value={month}
-                      onChange={(e) => setMonth(Number(e.target.value))}
-                      className="text-xs bg-white border border-slate-200 py-2 px-3 rounded-xl focus:outline-none"
-                    >
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                        <option key={m} value={m}>{m}월호</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">파일 포맷 규격</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setFileType('pdf')}
-                      className={`py-2 px-3 text-xs font-semibold rounded-xl border cursor-pointer transition-all ${
-                        fileType === 'pdf' ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]' : 'bg-white text-slate-700'
-                      }`}
-                    >
-                      PDF 업로드 (.pdf)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFileType('image')}
-                      className={`py-2 px-3 text-xs font-semibold rounded-xl border cursor-pointer transition-all ${
-                        fileType === 'image' ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]' : 'bg-white text-slate-700'
-                      }`}
-                    >
-                      이미지 보드 (.png/.jpg)
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Upload Dropzone */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">신문 문서 또는 커버 표지 업로드</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="border border-dashed border-slate-300 rounded-xl p-5 bg-white text-center flex flex-col items-center justify-center relative">
-                    <input
-                      type="file"
-                      accept={fileType === 'pdf' ? '.pdf' : 'image/*'}
-                      onChange={handleFileChange}
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                    />
-                    {fileType === 'pdf' ? <FileText className="h-8 w-8 text-[#1E3A5F] mb-2" /> : <ImageIcon className="h-8 w-8 text-[#1E3A5F] mb-2" />}
-                    <p className="text-xs font-bold text-slate-800">
-                      파일 선택하기 또는 드래그 앤 드롭
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-1">파일 제한 용량: 2MB</p>
-                    {fileName && <p className="text-xs font-semibold text-indigo-600 mt-2">✓ {fileName}</p>}
-                  </div>
-
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] font-bold text-[#D9A441] block">DEVELOPER TOOLS AUTO-TEST</span>
-                      <p className="text-xs text-slate-600">
-                        직접 업로드할 파일이 없으시다면 아래 버튼을 클릭하여 데모용 Unsplash 고품질 신문 표지 템플릿 이미지를 무작위 자동 매핑해 삽입할 수 있습니다.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleURLFallback}
-                      className="mt-3 py-2 px-4 bg-[#1E3A5F] hover:bg-[#1c3657] text-white text-[11px] font-semibold rounded-xl cursor-pointer"
-                    >
-                      랜덤 템플릿 소스 자동 배치
-                    </button>
-                  </div>
-                </div>
-                {uploadError && (
-                  <div className="flex items-center gap-1.5 text-rose-600 text-xs mt-2 font-medium">
-                    <AlertCircle className="h-4 w-4" />
-                    <span>{uploadError}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-end gap-2.5 border-t border-slate-200/60 pt-4">
                 <button
                   type="button"
-                  onClick={() => setIsAdding(false)}
-                  className="py-2 px-4 text-xs font-semibold text-slate-600 hover:text-slate-800 cursor-pointer"
+                  onClick={addUploadSlot}
+                  disabled={uploadSlots.length >= 3}
+                  className="flex items-center gap-1.5 bg-[#1E3A5F] hover:bg-[#152e4f] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer"
                 >
-                  취소
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>신문 추가 ({uploadSlots.length}/3)</span>
                 </button>
-                <button
-                  type="submit"
-                  className="py-2 px-6 bg-[#1A365D] hover:bg-[#11243F] text-white text-xs font-bold rounded-xl shadow-md cursor-pointer"
-                >
-                  보관소 게시 완수
-                </button>
+              </div>
+
+              <div className="space-y-6">
+                {uploadSlots.map((slot, index) => (
+                  <div key={index} className="bg-white border border-slate-200 rounded-xl p-4 md:p-5 relative space-y-4 shadow-sm animate-fade-inScale">
+                    {uploadSlots.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeUploadSlot(index)}
+                        className="absolute top-3 right-3 text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+                        title="이 항목 삭제"
+                      >
+                        <Trash className="h-4 w-4" />
+                      </button>
+                    )}
+                    
+                    <span className="inline-block bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-md mb-2">
+                      신문 항목 #{index + 1}
+                    </span>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">발행 신문 제목</label>
+                        <input
+                          type="text"
+                          required
+                          value={slot.title}
+                          onChange={(e) => updateSlot(index, { title: e.target.value })}
+                          placeholder="예: 대구일마이스터고 신문 2026년 6월호"
+                          className="w-full text-xs py-2.5 px-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-[#1E3A5F]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">발행 연도 / 월 선택</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <select
+                            value={slot.year}
+                            onChange={(e) => updateSlot(index, { year: Number(e.target.value) })}
+                            className="text-xs bg-white border border-slate-200 py-2 px-3 rounded-xl focus:outline-none cursor-pointer"
+                          >
+                            <option value={2026}>2026년</option>
+                            <option value={2025}>2025년</option>
+                            <option value={2024}>2024년</option>
+                          </select>
+
+                          <select
+                            value={slot.month}
+                            onChange={(e) => updateSlot(index, { month: Number(e.target.value) })}
+                            className="text-xs bg-white border border-slate-200 py-2 px-3 rounded-xl focus:outline-none cursor-pointer"
+                          >
+                            {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                              <option key={m} value={m}>{m}월호</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">파일 포맷 규격</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => updateSlot(index, { fileType: 'pdf' })}
+                            className={`py-2 px-3 text-xs font-semibold rounded-xl border cursor-pointer transition-all ${
+                              slot.fileType === 'pdf' ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]' : 'bg-white text-slate-700 border-slate-200'
+                            }`}
+                          >
+                            PDF 업로드 (.pdf)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateSlot(index, { fileType: 'image' })}
+                            className={`py-2 px-3 text-xs font-semibold rounded-xl border cursor-pointer transition-all ${
+                              slot.fileType === 'image' ? 'bg-[#1E3A5F] text-white border-[#1E3A5F]' : 'bg-white text-slate-700 border-slate-200'
+                            }`}
+                          >
+                            이미지 보드 (.png/.jpg)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Upload Dropzone */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">신문 문서 또는 커버 표지 업로드</label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="border border-dashed border-slate-300 rounded-xl p-5 bg-white text-center flex flex-col items-center justify-center relative hover:bg-slate-50 transition-colors">
+                          <input
+                            type="file"
+                            accept={slot.fileType === 'pdf' ? '.pdf' : 'image/*'}
+                            onChange={(e) => handleSlotFileChange(index, e)}
+                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                          />
+                          {slot.fileType === 'pdf' ? <FileText className="h-8 w-8 text-[#1E3A5F] mb-2" /> : <ImageIcon className="h-8 w-8 text-[#1E3A5F] mb-2" />}
+                          <p className="text-xs font-bold text-slate-800">
+                            파일 선택하기 또는 드래그 앤 드롭
+                          </p>
+                          <p className="text-[10px] text-slate-400 mt-1">파일 업로드 용량 제한: <strong className="text-[#1E3A5F]">6MB</strong></p>
+                          {slot.fileName && <p className="text-xs font-semibold text-indigo-600 mt-2">✓ {slot.fileName}</p>}
+                        </div>
+
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
+                          <div className="space-y-1.5">
+                            <span className="text-[10px] font-bold text-[#D9A441] block">DEVELOPER TOOLS AUTO-TEST</span>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                              직접 업로드할 파일이 없으시다면 아래 버튼을 클릭하여 데모용 Unsplash 고품질 신문 표지 템플릿 이미지를 무작위 자동 매핑해 삽입할 수 있습니다.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleSlotURLFallback(index)}
+                            className="mt-3 py-2 px-4 bg-[#1E3A5F] hover:bg-[#1c3657] text-white text-[11px] font-semibold rounded-xl cursor-pointer transition-colors"
+                          >
+                            랜덤 템플릿 소스 자동 배치
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {uploadError && (
+                <div className="flex items-center gap-1.5 text-rose-600 text-xs mt-2 font-semibold">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{uploadError}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between border-t border-slate-200/60 pt-4">
+                <p className="text-[11px] text-slate-500 font-medium">
+                  💡 게재된 신문은 보관소에 <strong className="text-[#D9A441]">영구 보존</strong>되며, 오직 관리자만 지울 수 있습니다.
+                </p>
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUploadSlots([
+                        { title: '', year: 2026, month: 6, fileType: 'pdf', fileBase64: '', fileName: '' }
+                      ]);
+                      setIsAdding(false);
+                    }}
+                    className="py-2 px-4 text-xs font-semibold text-slate-600 hover:text-slate-800 cursor-pointer"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    className="py-2 px-6 bg-[#1A365D] hover:bg-[#11243F] text-white text-xs font-bold rounded-xl shadow-md cursor-pointer transition-all"
+                  >
+                    {uploadSlots.length}개의 신문 보관소 게시 완수
+                  </button>
+                </div>
               </div>
             </form>
           </motion.div>
