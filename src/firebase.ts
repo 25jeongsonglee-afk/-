@@ -216,7 +216,26 @@ const getLocalData = <T>(key: string, initial: T[]): T[] => {
     localStorage.setItem(`lib_book_${key}`, JSON.stringify(initial));
     return initial;
   }
-  return JSON.parse(data);
+  let parsed = JSON.parse(data) as any[];
+  
+  // Clean and ensure unique IDs in existing lists to prevent React duplicate key rendering or overwrite bugs
+  const seenIds = new Set<string>();
+  let hasModified = false;
+  parsed = parsed.map((item: any, idx: number) => {
+    if (!item || !item.id || seenIds.has(item.id)) {
+      const generatedId = `${key === 'newspapers' ? 'paper' : 'item'}-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000000)}`;
+      seenIds.add(generatedId);
+      hasModified = true;
+      return { ...item, id: generatedId };
+    }
+    seenIds.add(item.id);
+    return item;
+  });
+
+  if (hasModified) {
+    localStorage.setItem(`lib_book_${key}`, JSON.stringify(parsed));
+  }
+  return parsed as T[];
 };
 
 const setLocalData = <T>(key: string, value: T[]): void => {
@@ -616,7 +635,8 @@ export async function getNewspapers(): Promise<Newspaper[]> {
       return handleFirestoreError(error, OperationType.LIST, 'newspapers');
     }
   } else {
-    return getLocalData<Newspaper>('newspapers', INITIAL_NEWSPAPERS);
+    const list = getLocalData<Newspaper>('newspapers', INITIAL_NEWSPAPERS);
+    return list.sort((a, b) => b.year * 100 + b.month - (a.year * 100 + a.month));
   }
 }
 
