@@ -331,7 +331,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
           
           if (rawBase64.startsWith('data:image/')) {
             try {
-              finalBase64 = await compressImageBase64(rawBase64, 1200, 1600, 0.55);
+              finalBase64 = await compressImageBase64(rawBase64, 900, 1200, 0.45);
             } catch (err) {
               console.error('Image compression failed, using original base64:', err);
             }
@@ -428,9 +428,9 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
       ]);
       setIsAdding(false);
       onRefresh();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('신문 등록 처리 중 에러가 발생했습니다.');
+      alert(err instanceof Error ? err.message : '신문 등록 처리 중 에러가 발생했습니다.');
     }
   };
 

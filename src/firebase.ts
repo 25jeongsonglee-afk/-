@@ -657,35 +657,51 @@ export async function addNewspaper(newspaper: Omit<Newspaper, 'id' | 'createdAt'
     createdAt: new Date().toISOString()
   };
 
-  // Always write immediately to local storage cache to keep local edits persistent
-  const list = getLocalData<Newspaper>('newspapers', INITIAL_NEWSPAPERS);
-  list.unshift(newPaper);
-  setLocalData('newspapers', list);
-
   if (isFirebaseActive()) {
     try {
       await setDoc(doc(db, 'newspapers', newPaper.id), newPaper);
-    } catch (error) {
-      console.warn("Could not save newspaper to Firestore cloud, but it was safely cached locally:", error);
+    } catch (error: any) {
+      console.error("Firebase save failed:", error);
+      let errMsg = "서버에 신문을 업로드하지 못했습니다.";
+      const errStr = error ? String(error.message || error) : "";
+      if (errStr.includes("maximum size") || errStr.includes("limit") || errStr.includes("exceed") || errStr.includes("too large") || errStr.includes("1 MiB") || errStr.includes("1048576") || errStr.toLowerCase().includes("size")) {
+        errMsg = "선택한 이미지/파일들의 총 용량이 너무 큽니다. (1MB 이하여야 합니다.)\n\n조치 방법: 한 번에 올리는 이미지 파일 수를 줄이시거나, 크기를 줄여서 업로드해 주십시오.";
+      } else if (errStr.includes("permission") || errStr.includes("Permission denied") || errStr.toLowerCase().includes("permission")) {
+        errMsg = "신문 게재 권한이 없거나 어드민 권한 정보가 올바르지 않습니다. 다시 로그인해 주십시오.";
+      } else {
+        errMsg = `서버 저장 오류: ${errStr}`;
+      }
+      throw new Error(errMsg);
     }
   }
+
+  // Always write immediately to local storage cache only when successful
+  const list = getLocalData<Newspaper>('newspapers', INITIAL_NEWSPAPERS);
+  list.unshift(newPaper);
+  setLocalData('newspapers', list);
 
   return newPaper;
 }
 
 export async function deleteNewspaper(id: string): Promise<void> {
-  // Always update the local cache immediately to prevent deleted items from persisting offline
-  const list = getLocalData<Newspaper>('newspapers', INITIAL_NEWSPAPERS);
-  const updated = list.filter(p => p.id !== id);
-  setLocalData('newspapers', updated);
-
   if (isFirebaseActive()) {
     try {
       await deleteDoc(doc(db, 'newspapers', id));
-    } catch (error) {
-      console.warn("Could not delete newspaper from Firestore cloud, but it was removed locally:", error);
+    } catch (error: any) {
+      console.error("Firebase delete failed:", error);
+      const errStr = error ? String(error.message || error) : "";
+      let errMsg = `서버에서 신문을 삭제하지 못했습니다: ${errStr}`;
+      if (errStr.includes("permission") || errStr.includes("Permission denied") || errStr.toLowerCase().includes("permission")) {
+        errMsg = "신문 삭제 권한이 없습니다. 관리자 로그인을 다시 확인해 주십시오.";
+      }
+      throw new Error(errMsg);
     }
   }
+
+  // Always update the local cache immediately when successful
+  const list = getLocalData<Newspaper>('newspapers', INITIAL_NEWSPAPERS);
+  const updated = list.filter(p => p.id !== id);
+  setLocalData('newspapers', updated);
 }
 
 // 3. INTERVIEW RESERVATIONS SERVICES
@@ -866,33 +882,45 @@ export async function addNotice(notice: Omit<Notice, 'id' | 'createdAt'>): Promi
     createdAt: new Date().toISOString()
   };
 
-  const list = getLocalData<Notice>('notices', INITIAL_NOTICES);
-  list.unshift(newNotice);
-  setLocalData('notices', list);
-
   if (isFirebaseActive()) {
     try {
       await setDoc(doc(db, 'notices', newNotice.id), newNotice);
-    } catch (error) {
-      console.warn("Could not save notice to Firestore, but saved backup locally:", error);
+    } catch (error: any) {
+      console.error("Firebase notice save failed:", error);
+      const errStr = error ? String(error.message || error) : "";
+      let errMsg = `서버 공지사항 등록 실패: ${errStr}`;
+      if (errStr.includes("permission") || errStr.toLowerCase().includes("permission")) {
+        errMsg = "공지사항 등록 권한이 없습니다. 관리자 상태를 확인해 주십시오.";
+      }
+      throw new Error(errMsg);
     }
   }
+
+  const list = getLocalData<Notice>('notices', INITIAL_NOTICES);
+  list.unshift(newNotice);
+  setLocalData('notices', list);
 
   return newNotice;
 }
 
 export async function deleteNotice(id: string): Promise<void> {
-  const list = getLocalData<Notice>('notices', INITIAL_NOTICES);
-  const updated = list.filter(n => n.id !== id);
-  setLocalData('notices', updated);
-
   if (isFirebaseActive()) {
     try {
       await deleteDoc(doc(db, 'notices', id));
-    } catch (error) {
-      console.warn("Could not delete notice from Firestore, but removed locally:", error);
+    } catch (error: any) {
+      console.error("Firebase notice delete failed:", error);
+      const errStr = error ? String(error.message || error) : "";
+      let errMsg = `서버 공지사항 삭제 실패: ${errStr}`;
+      if (errStr.includes("permission") || errStr.toLowerCase().includes("permission")) {
+        errMsg = "공지사항 삭제 권한이 없습니다. 관리자 상태를 확인해 주십시오.";
+      }
+      throw new Error(errMsg);
     }
   }
+
+  const list = getLocalData<Notice>('notices', INITIAL_NOTICES);
+  const updated = list.filter(n => n.id !== id);
+  setLocalData('notices', updated);
 }
 
 // 6. NEWSPAPER COMMENTS SERVICES
