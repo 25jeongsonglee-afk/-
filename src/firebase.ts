@@ -623,7 +623,7 @@ export async function getNewspapers(): Promise<Newspaper[]> {
 export async function addNewspaper(newspaper: Omit<Newspaper, 'id' | 'createdAt'>): Promise<Newspaper> {
   const newPaper: Newspaper = {
     ...newspaper,
-    id: `paper-${Date.now()}`,
+    id: `paper-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
     createdAt: new Date().toISOString()
   };
 
@@ -681,7 +681,7 @@ export async function addReservation(reservation: Omit<InterviewReservation, 'id
   const current = currentSimulatedUser;
   const newReservation: InterviewReservation = {
     ...reservation,
-    id: `res-${Date.now()}`,
+    id: `res-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
     userId: current?.id || 'guest',
     status: 'pending',
     createdAt: new Date().toISOString()
@@ -758,7 +758,7 @@ export async function getInquiries(): Promise<Inquiry[]> {
 export async function addInquiry(inquiry: Omit<Inquiry, 'id' | 'status' | 'createdAt'>): Promise<Inquiry> {
   const newInquiry: Inquiry = {
     ...inquiry,
-    id: `inq-${Date.now()}`,
+    id: `inq-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
     status: 'pending',
     createdAt: new Date().toISOString()
   };
@@ -820,7 +820,7 @@ export async function getNotices(): Promise<Notice[]> {
 export async function addNotice(notice: Omit<Notice, 'id' | 'createdAt'>): Promise<Notice> {
   const newNotice: Notice = {
     ...notice,
-    id: `notice-${Date.now()}`,
+    id: `notice-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
     createdAt: new Date().toISOString()
   };
 
@@ -901,7 +901,7 @@ export async function getNewspaperComments(newspaperId: string): Promise<Newspap
 export async function addNewspaperComment(comment: Omit<NewspaperComment, 'id' | 'createdAt'>): Promise<NewspaperComment> {
   const newComment: NewspaperComment = {
     ...comment,
-    id: `comment-${Date.now()}`,
+    id: `comment-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
     createdAt: new Date().toISOString()
   };
 
@@ -979,7 +979,7 @@ export async function getCompliments(): Promise<Compliment[]> {
 export async function addCompliment(compliment: Omit<Compliment, 'id' | 'createdAt'>): Promise<Compliment> {
   const newComp: Compliment = {
     ...compliment,
-    id: `comp-${Date.now()}`,
+    id: `comp-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
     createdAt: new Date().toISOString()
   };
 
