@@ -34,6 +34,8 @@ export interface Newspaper {
   fileName?: string;
   fileType?: string; // 'pdf' | 'image'
   createdAt: string;
+  fileDataUrls?: string[]; // Array of multiple file base64 data URLs
+  fileNames?: string[]; // Array of multiple filenames matching fileDataUrls
 }
 
 export interface Inquiry {

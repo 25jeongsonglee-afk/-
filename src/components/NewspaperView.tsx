@@ -18,18 +18,22 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
   const [selectedYear, setSelectedYear] = useState<number | 'all'>('all');
   const [isAdding, setIsAdding] = useState(false);
   
-  // Add state forms (supports multiple files up to 3 slots)
+  // Add state forms (supports multiple files up to 3 inside each slot)
+  interface UploadFile {
+    fileBase64: string;
+    fileName: string;
+  }
+
   interface UploadSlot {
     title: string;
     year: number;
     month: number;
     fileType: 'pdf' | 'image';
-    fileBase64: string;
-    fileName: string;
+    files: UploadFile[];
   }
 
   const [uploadSlots, setUploadSlots] = useState<UploadSlot[]>([
-    { title: '', year: 2026, month: 6, fileType: 'pdf', fileBase64: '', fileName: '' }
+    { title: '', year: 2026, month: 6, fileType: 'pdf', files: [] }
   ]);
   const [uploadError, setUploadError] = useState('');
   const [downloadGuidePaper, setDownloadGuidePaper] = useState<Newspaper | null>(null);
@@ -40,6 +44,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
 
   // Comments states
   const [selectedNewspaper, setSelectedNewspaper] = useState<Newspaper | null>(null);
+  const [commentsModalPageIndex, setCommentsModalPageIndex] = useState(0);
   const [comments, setComments] = useState<NewspaperComment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [commentDept, setCommentDept] = useState('');
@@ -53,6 +58,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
 
   // States for viewing newspaper large
   const [zoomedPaper, setZoomedPaper] = useState<Newspaper | null>(null);
+  const [zoomedPageIndex, setZoomedPageIndex] = useState(0);
   const [zoomScale, setZoomScale] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [showZoomSidebar, setShowZoomSidebar] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
@@ -61,20 +67,31 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setZoomedPaper(null);
+      } else if (e.key === 'ArrowLeft') {
+        setZoomedPageIndex(prev => Math.max(0, prev - 1));
+      } else if (e.key === 'ArrowRight') {
+        if (zoomedPaper) {
+          const pagesCount = zoomedPaper.fileDataUrls && zoomedPaper.fileDataUrls.length > 0
+            ? zoomedPaper.fileDataUrls.length
+            : (zoomedPaper.fileDataUrl ? 1 : 0);
+          setZoomedPageIndex(prev => Math.min(pagesCount - 1, prev + 1));
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [zoomedPaper]);
 
   useEffect(() => {
     if (initialSelectedId) {
       const found = newspapers.find((n) => n.id === initialSelectedId);
       if (found) {
         setSelectedNewspaper(found);
+        setCommentsModalPageIndex(0);
         loadComments(found.id);
         // Automatically open in zoomed view as well
         setZoomedPaper(found);
+        setZoomedPageIndex(0);
         setZoomScale(1);
         setRotation(0);
         if (typeof window !== 'undefined' && window.innerWidth < 1024) {
@@ -89,7 +106,9 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
 
   const handleZoomOpen = (paper: Newspaper) => {
     setZoomedPaper(paper);
+    setZoomedPageIndex(0);
     setSelectedNewspaper(paper); // Sync selectedNewspaper to that paper!
+    setCommentsModalPageIndex(0);
     setZoomScale(1);
     setRotation(0);
     loadComments(paper.id);
@@ -114,6 +133,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
 
   const handleOpenComments = (paper: Newspaper) => {
     setSelectedNewspaper(paper);
+    setCommentsModalPageIndex(0);
     loadComments(paper.id);
 
     // Pre-populate fields based on currentUser to make it extremely friendly
@@ -208,7 +228,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
     }
   };
 
-  // Functions to manage multiple upload slots (up to 3)
+  // Functions to manage multiple upload slots (up to 3 distinct newspapers)
   const addUploadSlot = () => {
     if (uploadSlots.length >= 3) {
       alert('한 번에 최대 3개까지만 업로드할 수 있습니다.');
@@ -222,8 +242,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
         year: lastSlot?.year || 2026,
         month: Math.min(12, (lastSlot?.month || 6) + 1),
         fileType: 'pdf',
-        fileBase64: '',
-        fileName: ''
+        files: []
       }
     ]);
   };
@@ -238,48 +257,91 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
   };
 
   const handleSlotFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    if (file.size > 6 * 1024 * 1024) {
-      alert(`파일 용량이 너무 큽니다. 6MB 이하의 파일만 업로드할 수 있습니다. (현재: ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+    const currentFilesCount = uploadSlots[index].files.length;
+    const availableSlots = 3 - currentFilesCount;
+    if (availableSlots <= 0) {
+      alert('이미 최대 3개의 파일이 업로드되어 더 추가할 수 없습니다.');
       return;
     }
 
+    const filesToRead = Array.from(files).slice(0, availableSlots) as File[];
     setUploadError('');
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        updateSlot(index, {
-          fileBase64: reader.result,
-          fileName: file.name
-        });
+
+    filesToRead.forEach((file) => {
+      if (file.size > 6 * 1024 * 1024) {
+        alert(`용량이 6MB를 초과하는 파일은 처리되지 않습니다: ${file.name} (현재: ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+        return;
       }
-    };
-    reader.readAsDataURL(file);
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          setUploadSlots(prevSlots => prevSlots.map((slot, sIdx) => {
+            if (sIdx === index) {
+              return {
+                ...slot,
+                files: [...slot.files, { fileBase64: reader.result as string, fileName: file.name }]
+              };
+            }
+            return slot;
+          }));
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    e.target.value = '';
+  };
+
+  const handleRemoveFileFromSlot = (slotIdx: number, fileIdx: number) => {
+    setUploadSlots(prevSlots => prevSlots.map((slot, i) => {
+      if (i === slotIdx) {
+        return {
+          ...slot,
+          files: slot.files.filter((_, fIdx) => fIdx !== fileIdx)
+        };
+      }
+      return slot;
+    }));
   };
 
   const handleSlotURLFallback = (index: number) => {
+    const currentFilesCount = uploadSlots[index].files.length;
+    if (currentFilesCount >= 3) {
+      alert('이미 최대 3개의 파일이 업로드되어 더 추가할 수 없습니다.');
+      return;
+    }
+
     const randomSeed = Math.floor(Math.random() * 1000);
     const mockPic = `https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800&sig=${randomSeed}`;
     const slot = uploadSlots[index];
-    updateSlot(index, {
-      fileBase64: mockPic,
-      fileName: `meister_paper_gen_${slot.month}월호.pdf`
-    });
+    const pageNum = currentFilesCount + 1;
+
+    setUploadSlots(prevSlots => prevSlots.map((s, i) => {
+      if (i === index) {
+        return {
+          ...s,
+          files: [...s.files, { fileBase64: mockPic, fileName: `meister_paper_gen_${s.month}월호_p${pageNum}.pdf` }]
+        };
+      }
+      return s;
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validations: each slot requires a title and a file
+    // Validations: each slot requires a title and at least 1 file
     for (let i = 0; i < uploadSlots.length; i++) {
       const slot = uploadSlots[i];
       if (!slot.title.trim()) {
         alert(`물별 신문 ${i + 1}의 제목을 기입해주세요.`);
         return;
       }
-      if (!slot.fileBase64) {
+      if (slot.files.length === 0) {
         alert(`물별 신문 ${i + 1}의 신문 문서를 업로드하거나 데모 템플릿 소스를 자동 배치 해주어야 합니다.`);
         return;
       }
@@ -287,18 +349,24 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
 
     try {
       for (const slot of uploadSlots) {
+        const mainFile = slot.files[0];
+        const allBase64s = slot.files.map(f => f.fileBase64);
+        const allNames = slot.files.map(f => f.fileName);
+
         await addNewspaper({
           title: slot.title.trim(),
           year: slot.year,
           month: slot.month,
           fileType: slot.fileType,
-          fileName: slot.fileName || `meister_paper_${slot.year}_${slot.month}.pdf`,
-          fileDataUrl: slot.fileBase64
+          fileName: mainFile.fileName,
+          fileDataUrl: mainFile.fileBase64,
+          fileDataUrls: allBase64s,
+          fileNames: allNames
         });
       }
       // reset
       setUploadSlots([
-        { title: '', year: 2026, month: 6, fileType: 'pdf', fileBase64: '', fileName: '' }
+        { title: '', year: 2026, month: 6, fileType: 'pdf', files: [] }
       ]);
       setIsAdding(false);
       onRefresh();
@@ -495,40 +563,89 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
                     </div>
 
                     {/* Upload Dropzone */}
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">신문 문서 또는 커버 표지 업로드</label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="border border-dashed border-slate-300 rounded-xl p-5 bg-white text-center flex flex-col items-center justify-center relative hover:bg-slate-50 transition-colors">
-                          <input
-                            type="file"
-                            accept={slot.fileType === 'pdf' ? '.pdf' : 'image/*'}
-                            onChange={(e) => handleSlotFileChange(index, e)}
-                            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                          />
-                          {slot.fileType === 'pdf' ? <FileText className="h-8 w-8 text-[#1E3A5F] mb-2" /> : <ImageIcon className="h-8 w-8 text-[#1E3A5F] mb-2" />}
-                          <p className="text-xs font-bold text-slate-800">
-                            파일 선택하기 또는 드래그 앤 드롭
-                          </p>
-                          <p className="text-[10px] text-slate-400 mt-1">파일 업로드 용량 제한: <strong className="text-[#1E3A5F]">6MB</strong></p>
-                          {slot.fileName && <p className="text-xs font-semibold text-indigo-600 mt-2">✓ {slot.fileName}</p>}
-                        </div>
-
-                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
-                          <div className="space-y-1.5">
-                            <span className="text-[10px] font-bold text-[#D9A441] block">DEVELOPER TOOLS AUTO-TEST</span>
-                            <p className="text-xs text-slate-600 leading-relaxed">
-                              직접 업로드할 파일이 없으시다면 아래 버튼을 클릭하여 데모용 Unsplash 고품질 신문 표지 템플릿 이미지를 무작위 자동 매핑해 삽입할 수 있습니다.
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleSlotURLFallback(index)}
-                            className="mt-3 py-2 px-4 bg-[#1E3A5F] hover:bg-[#1c3657] text-white text-[11px] font-semibold rounded-xl cursor-pointer transition-colors"
-                          >
-                            랜덤 템플릿 소스 자동 배치
-                          </button>
-                        </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-xs font-semibold text-slate-700">신문 문서 또는 커버 표지 업로드 (최대 3장)</label>
+                        <span className="text-xs bg-[#1E3A5F]/10 text-[#1E3A5F] font-bold px-2 py-0.5 rounded-full">
+                          {slot.files.length} / 3 개 업로드됨
+                        </span>
                       </div>
+                      
+                      {slot.files.length < 3 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="border border-dashed border-slate-300 rounded-xl p-5 bg-white text-center flex flex-col items-center justify-center relative hover:bg-slate-50 transition-colors">
+                            <input
+                              type="file"
+                              multiple
+                              accept={slot.fileType === 'pdf' ? '.pdf' : 'image/*'}
+                              onChange={(e) => handleSlotFileChange(index, e)}
+                              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                            />
+                            {slot.fileType === 'pdf' ? <FileText className="h-8 w-8 text-[#1E3A5F] mb-2" /> : <ImageIcon className="h-8 w-8 text-[#1E3A5F] mb-2" />}
+                            <p className="text-xs font-bold text-slate-800">
+                              파일 선택하기 또는 드래그 앤 드롭
+                            </p>
+                            <p className="text-[10px] text-slate-400 mt-1">파일 업로드 용량 제한: <strong className="text-[#1E3A5F]">6MB (개당)</strong></p>
+                          </div>
+
+                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between">
+                            <div className="space-y-1.5">
+                              <span className="text-[10px] font-bold text-[#D9A441] block">DEVELOPER TOOLS AUTO-TEST</span>
+                              <p className="text-xs text-slate-600 leading-relaxed">
+                                본인 컴퓨터에 업로드할 신문 이미지 파일이 없다면 아래 버튼을 누르십시오. Unsplash 무작위 고품질 신문 표지 이미지를 생성하여 자동 매핑합니다. (최대 3장 순차 추가 가능)
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleSlotURLFallback(index)}
+                              className="mt-3 py-2 px-4 bg-[#1E3A5F] hover:bg-[#1c3657] text-white text-[11px] font-semibold rounded-xl cursor-pointer transition-colors"
+                            >
+                              랜덤 템플릿 소스 자동 배치 (+1장 완료)
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold text-center">
+                          🎉 최대 갯수인 3개의 파일을 모두 성공적으로 등록했습니다!
+                        </div>
+                      )}
+
+                      {/* Display Uploaded File list */}
+                      {slot.files.length > 0 && (
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                          <p className="text-xs font-bold text-slate-700">등록된 지면 목록:</p>
+                          <div className="space-y-1.5">
+                            {slot.files.map((file, fIdx) => (
+                              <div key={fIdx} className="flex items-center justify-between bg-white border border-slate-150 p-2 rounded-lg text-xs">
+                                <div className="flex items-center gap-2 overflow-hidden mr-2">
+                                  <span className="text-[9px] bg-slate-100 text-slate-600 font-bold px-1.5 py-0.5 rounded">
+                                    {fIdx + 1}쪽 지면
+                                  </span>
+                                  {slot.fileType === 'pdf' ? (
+                                    <FileText className="h-4 w-4 text-[#1E3A5F] shrink-0" />
+                                  ) : (
+                                    <img
+                                      src={file.fileBase64}
+                                      alt="미리보기"
+                                      className="h-6 w-6 object-cover rounded shrink-0 border border-slate-200"
+                                      referrerPolicy="no-referrer"
+                                    />
+                                  )}
+                                  <span className="truncate font-medium text-slate-700">{file.fileName}</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveFileFromSlot(index, fIdx)}
+                                  className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1 rounded transition-colors cursor-pointer"
+                                  title="지면 삭제"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -550,7 +667,7 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
                     type="button"
                     onClick={() => {
                       setUploadSlots([
-                        { title: '', year: 2026, month: 6, fileType: 'pdf', fileBase64: '', fileName: '' }
+                        { title: '', year: 2026, month: 6, fileType: 'pdf', files: [] }
                       ]);
                       setIsAdding(false);
                     }}
@@ -606,9 +723,16 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
                 )}
                 
                 {/* Format Tag */}
-                <span className="absolute top-3 left-3 bg-[#1E3A5F] text-white text-[9px] font-bold px-2 py-1 rounded-md uppercase tracking-wider shadow-sm z-10">
-                  {paper.fileType === 'pdf' ? '📖 PDF ARCHIVE' : '🖼️ IMAGE BOARD'}
-                </span>
+                <div className="absolute top-3 left-3 flex flex-col gap-1 z-10">
+                  <span className="bg-[#1E3A5F] text-white text-[9px] font-bold px-2 py-1 rounded-md uppercase tracking-wider shadow-sm">
+                    {paper.fileType === 'pdf' ? '📖 PDF ARCHIVE' : '🖼️ IMAGE BOARD'}
+                  </span>
+                  {paper.fileDataUrls && paper.fileDataUrls.length > 1 && (
+                    <span className="bg-amber-500 text-slate-950 text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-sm w-fit flex items-center gap-1">
+                      📄 {paper.fileDataUrls.length}쪽 분량
+                    </span>
+                  )}
+                </div>
 
                 {/* Quick Details Floating Banner */}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-3 gap-1.5 duration-300">
@@ -730,31 +854,59 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
                 {/* Left Panel: Newspaper Poster */}
                 <div className="lg:col-span-4 flex flex-col gap-4">
                   <div className="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 shadow-inner">
-                    {selectedNewspaper.fileDataUrl ? (
-                      <div 
-                        onClick={() => handleZoomOpen(selectedNewspaper)}
-                        className="aspect-[4/5] rounded-xl overflow-hidden relative border border-slate-200 shadow-sm max-h-[220px] lg:max-h-[300px] cursor-zoom-in group/thumb"
-                      >
-                        <img
-                          src={selectedNewspaper.fileDataUrl}
-                          alt={selectedNewspaper.title}
-                          referrerPolicy="no-referrer"
-                          className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-500"
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-xs font-bold gap-1">
-                          <Maximize2 className="h-4 w-4 text-amber-300" />
-                          <span>크게 기사 보기</span>
+                    {(() => {
+                      const selectedPages = selectedNewspaper.fileDataUrls && selectedNewspaper.fileDataUrls.length > 0
+                        ? selectedNewspaper.fileDataUrls
+                        : (selectedNewspaper.fileDataUrl ? [selectedNewspaper.fileDataUrl] : []);
+                      const activeImage = selectedPages[commentsModalPageIndex] || '';
+                      
+                      return selectedPages.length > 0 ? (
+                        <div className="space-y-2">
+                          <div 
+                            onClick={() => handleZoomOpen(selectedNewspaper)}
+                            className="aspect-[4/5] rounded-xl overflow-hidden relative border border-slate-200 shadow-sm max-h-[220px] lg:max-h-[300px] cursor-zoom-in group/thumb"
+                          >
+                            <img
+                              src={activeImage}
+                              alt={selectedNewspaper.title}
+                              referrerPolicy="no-referrer"
+                              className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-500"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-xs font-bold gap-1">
+                              <Maximize2 className="h-4 w-4 text-amber-300" />
+                              <span>크게 기사 보기</span>
+                            </div>
+                            <span className="absolute bottom-2 left-2 px-2.5 py-1 bg-slate-900/80 backdrop-blur-sm rounded-lg text-[9px] text-amber-300 font-bold uppercase font-mono border border-slate-700 z-10">
+                              {selectedNewspaper.fileType === 'pdf' ? `📖 PDF 지면 ${commentsModalPageIndex + 1}/${selectedPages.length}` : `🖼️ 이미지 지면 ${commentsModalPageIndex + 1}/${selectedPages.length}`}
+                            </span>
+                          </div>
+
+                          {selectedPages.length > 1 && (
+                            <div className="flex items-center justify-center gap-1.5 pt-1">
+                              {selectedPages.map((_, pIdx) => (
+                                <button
+                                  key={pIdx}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setCommentsModalPageIndex(pIdx);
+                                  }}
+                                  className={`h-2 rounded-full transition-all cursor-pointer ${
+                                    commentsModalPageIndex === pIdx ? 'w-5 bg-[#1E3A5F]' : 'w-2 bg-slate-300 hover:bg-slate-400'
+                                  }`}
+                                  title={`${pIdx + 1}페이지`}
+                                />
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <span className="absolute bottom-2 left-2 px-2.5 py-1 bg-slate-900/80 backdrop-blur-sm rounded-lg text-[9px] text-amber-300 font-bold uppercase font-mono border border-slate-700 z-10 animate-pulse">
-                          {selectedNewspaper.fileType === 'pdf' ? '📖 PDF 데이터 보관본' : '🖼️ 이미지 파일 지면'}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="aspect-[4/5] bg-slate-100 rounded-xl flex flex-col items-center justify-center p-6 text-slate-400">
-                        <BookOpen className="h-10 w-10 text-slate-300 mb-2" />
-                        <span className="text-xs text-slate-400 font-semibold font-mono">신문 지면 이미지 없음</span>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="aspect-[4/5] bg-slate-100 rounded-xl flex flex-col items-center justify-center p-6 text-slate-400">
+                          <BookOpen className="h-10 w-10 text-slate-300 mb-2" />
+                          <span className="text-xs text-slate-400 font-semibold font-mono">신문 지면 이미지 없음</span>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="space-y-2">
@@ -1041,6 +1193,10 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
         {zoomedPaper && (() => {
           const isMobileSize = typeof window !== 'undefined' ? window.innerWidth < 1024 : false;
           const baseHeight = isMobileSize ? 58 : 78;
+          const pages = zoomedPaper.fileDataUrls && zoomedPaper.fileDataUrls.length > 0
+            ? zoomedPaper.fileDataUrls
+            : (zoomedPaper.fileDataUrl ? [zoomedPaper.fileDataUrl] : []);
+          
           return (
             <motion.div
               initial={{ opacity: 0 }}
@@ -1057,13 +1213,46 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
                   <div>
                     <h3 className="text-xs sm:text-sm font-bold tracking-tight text-white">{zoomedPaper.title}</h3>
                     <p className="text-[9px] sm:text-[10px] text-slate-400 font-mono mt-0.5">
-                      {zoomedPaper.year}년 {zoomedPaper.month}월호 • <span className="hidden sm:inline">화면 조절기를 사용하거나 슬라이딩 스크롤하여 확대 기사를 읽으십시오.</span><span className="sm:hidden">화면 조절후 확대지면 스크롤</span>
+                      {zoomedPaper.year}년 {zoomedPaper.month}월호 • <span className="hidden sm:inline">화면 조절기 혹은 키보드 방향키(◀, ▶)를 사용하면 지면을 탐색할 수 있습니다.</span><span className="sm:hidden">지면 이동/방향키 조절가능</span>
                     </p>
                   </div>
                 </div>
 
                 {/* Manipulation Control Center */}
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 bg-slate-900 border border-slate-800 p-1 sm:p-1.5 rounded-2xl md:mx-auto">
+                  {/* Page Navigation block */}
+                  {pages.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        disabled={zoomedPageIndex === 0}
+                        onClick={() => setZoomedPageIndex(prev => Math.max(0, prev - 1))}
+                        className="p-1 px-2.5 bg-slate-850 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-750 rounded-xl text-slate-300 hover:text-white transition-all text-xs font-bold flex items-center gap-1 cursor-pointer"
+                        title="이전 쪽"
+                      >
+                        <span>◀</span>
+                        <span className="hidden sm:inline">이전 쪽</span>
+                      </button>
+
+                      <span className="text-[10px] font-mono text-amber-400 px-2 py-1 font-bold min-w-[55px] text-center bg-slate-950 rounded-lg">
+                        {zoomedPageIndex + 1} / {pages.length} 쪽
+                      </span>
+
+                      <button
+                        type="button"
+                        disabled={zoomedPageIndex === pages.length - 1}
+                        onClick={() => setZoomedPageIndex(prev => Math.min(pages.length - 1, prev + 1))}
+                        className="p-1 px-2.5 bg-slate-850 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-slate-750 rounded-xl text-slate-300 hover:text-white transition-all text-xs font-bold flex items-center gap-1 cursor-pointer"
+                        title="다음 쪽"
+                      >
+                        <span className="hidden sm:inline">다음 쪽</span>
+                        <span>▶</span>
+                      </button>
+
+                      <div className="w-[1px] h-4 bg-slate-800 mx-0.5 sm:mx-1" />
+                    </>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => setZoomScale(prev => Math.max(prev - 0.25, 0.5))}
@@ -1157,17 +1346,17 @@ export default function NewspaperView({ newspapers, onRefresh, currentUser, init
               <div className="flex-1 flex flex-col lg:flex-row gap-3 sm:gap-4 overflow-hidden min-h-0">
                 
                 {/* Display Canvas Frame Container */}
-                <div className="flex-1 overflow-auto p-1 sm:p-4 max-h-full cursor-grab active:cursor-grabbing relative custom-scrollbar bg-black/20 rounded-2xl border border-slate-900 flex">
+                <div className="flex-1 overflow-auto p-1 sm:p-4 max-h-full cursor-grab active:cursor-grabbing relative custom-scrollbar bg-black/20 rounded-2xl border border-slate-900 flex animate-fadeIn bg-slate-950">
                   <div 
                     className="m-auto transition-all duration-200 ease-out origin-center shrink-0 flex items-center justify-center p-2"
                     style={{ transform: `rotate(${rotation}deg)` }}
                   >
-                    {zoomedPaper.fileDataUrl ? (
+                    {pages[zoomedPageIndex] ? (
                       <img
-                        src={zoomedPaper.fileDataUrl}
-                        alt={zoomedPaper.title}
+                        src={pages[zoomedPageIndex]}
+                        alt={`${zoomedPaper.title} - ${zoomedPageIndex + 1}페이지`}
                         referrerPolicy="no-referrer"
-                        className="shadow-2xl rounded-lg pointer-events-auto border border-slate-800 object-contain transition-all"
+                        className="shadow-2xl rounded-lg pointer-events-auto border border-slate-850 object-contain transition-all"
                         style={{
                           height: `${baseHeight * zoomScale}vh`,
                           width: 'auto',
